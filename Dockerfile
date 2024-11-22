@@ -37,9 +37,6 @@ RUN npm install prisma --no-save
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 
-# Copie o arquivo de ambiente, se necessário
-COPY .env .env
-
 # Exponha a porta que a aplicação utiliza (ajuste se necessário)
 EXPOSE 8080
 
