@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", // Define a versão do ECMAScript
+    "module": "CommonJS", // Define o módulo como CommonJs
+    "outDir": "./dist", // Diretório de saída para arquivos compilados
+    "esModuleInterop": true, // Habilita interoperabilidade com CommonJS
+    "moduleResolution": "node", // Resolve módulos usando o estilo Node.js
+    "skipLibCheck": true, // Ignora a verificação de tipo nas bibliotecas
+    "strict": true, // Ativa verificações estritas
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src"], // Inclui a pasta src para compilação
+  "exclude": ["node_modules"] // Exclui node_modules da compilação
+}
