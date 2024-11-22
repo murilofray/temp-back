@@ -9,7 +9,7 @@ import docentesRouter from './modulos/gestao-docentes/docentesRouters';
 import academicoRouter from './modulos/gestao-academica/academicoRouters';
 import comumRouters from './comum/comumRouters';
 
-const PORT = process.env.BACKEND_PORT || 3333;
+const PORT = 8080;
 const app = express();
 
 const corsOptions = {
