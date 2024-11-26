@@ -1,12 +1,18 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ProgressaoService } from '../services/progressaoService';
+import { ServidorService } from '../services/servidorService';
+
 
 const progressaoService = new ProgressaoService();
+const servidorService = new ServidorService();
+
 
 export class ProgressaoController {
   async create(req: Request, res: Response) {
     const resposta = await progressaoService.create(req.body);
+    await servidorService.atualizarServidorApto(req.body.servidorId, req.body.tipo);
+
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {

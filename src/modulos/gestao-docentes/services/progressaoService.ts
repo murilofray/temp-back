@@ -11,12 +11,17 @@ export class ProgressaoService {
         where: {
           deletedAt: null,
         },
+        include: {
+          Servidor: true,
+        },
       });
       return { ok: true, data: progressoes };
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
   }
+
+  
   
   async create(progressao: Progressao) {
     try {

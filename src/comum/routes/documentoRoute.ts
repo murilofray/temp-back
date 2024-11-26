@@ -19,5 +19,7 @@ router.get('/atas', (req, res) => documentoController.getAtaDocumentosScan(req, 
 router.post('/', upload.single('pdf'), documentoController.create);
 router.put('/:id', upload.single('pdf'), documentoController.update);
 router.delete('/:id', documentoController.delete);
+router.get('/ultimo-tipo-20', documentoController.getLastDocumentoTipo20.bind(documentoController));
+router.put('/ata/:id', upload.single('pdf'), documentoController.updateAta)
 
 export default router;

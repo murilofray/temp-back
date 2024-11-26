@@ -4,38 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run trigger && prisma generate && ts-node-dev ./src/server.ts",
-    "start": "node ./dist/src/server.js",
+    "dev": "npm run trigger && ts-node-dev ./src/server.ts",
+    "start": "npm run migrate && npm run seed && npm run trigger && node ./dist/src/server.js",
     "build": "prisma generate && tsc",
     "migrate": "prisma migrate deploy",
+    "test": "echo \"Nenhum teste configurado\"",
+    "format": "prettier --write .",
+    "trigger": "npx ts-node src/run-msql-trigger.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "npm run prisma:generate && ts-node prisma/seed.ts",
-    "test": "echo \"Nenhum teste configurado\"",
-    "format": "prettier --write .",
-    "trigger": "npx ts-node src/run-msql-trigger.ts"
+    "seed": "npm run prisma:generate && ts-node prisma/seed.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
-  "authors": [
-    {
-      "name": "Brenno Murakami",
-      "email": "",
-      "role": "Desenvolvimento do sistema"
-    },
-    {
-      "name": "Danilo Domingues Quirino",
-      "email": "danilo.quirino@aluno.ifsp.edu.br",
-      "role": "Desenvolvimento do sistema"
-    },
-    {
-      "name": "Paulo Eduardo Bolher",
-      "email": "",
-      "role": "Desenvolvimento do sistema"
-    }
-  ],
+  "authors": [],
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.22.0",

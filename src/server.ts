@@ -10,7 +10,7 @@ import academicoRouter from './modulos/gestao-academica/academicoRouters';
 import comumRouters from './comum/comumRouters';
 import servidorRoutes from './comum/routes/servidorRoutes';
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3333;
 const app = express();
 
 const corsOptions = {

@@ -793,3 +793,7 @@ ehthumbs_vista.db
 !prisma/
 !prisma/migrations/
 !prisma/migrations/**/*
+!src/trigger/
+!src/trigger/**/*
+!sql
+!sql/**/*

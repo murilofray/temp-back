@@ -6,29 +6,7 @@ import { ErrorHandler } from '../../../handler/prismaErrorHandler';
 export class OcorrenciaService {
   async create(ocorrencia: Ocorrencia) {
     try {
-      // Verificar se as contas ligadas a ocorrencia existem
-      const lancadoPor = await prisma.servidor.findUnique({
-        where: {
-          id: ocorrencia.lancadoPor ?? undefined,
-          deletedAt: null,
-        },
-      });
-
-      if (!lancadoPor) {
-        return { ok: false, data: 'O servidor que lançou a ocorrência não está cadastrado no sistema.' };
-      }
-
-      const servidor = await prisma.servidor.findUnique({
-        where: {
-          id: ocorrencia.servidorId ?? undefined,
-          deletedAt: null,
-        },
-      });
-
-      if (!servidor) {
-        return { ok: false, data: 'O servidor atribuido a essa ocorrência não está cadastrado no sistema.' };
-      }
-
+      
       const createOcorrencia = await prisma.ocorrencia.create({ data: ocorrencia });
       return { ok: true, data: createOcorrencia };
     } catch (error) {

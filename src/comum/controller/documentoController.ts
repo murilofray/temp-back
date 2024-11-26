@@ -76,6 +76,45 @@ export default class DocumentoController {
     else return res.status(500).json({ message: 'Documento não armazenado. Tente novamente.' });
   }
 
+  async updateAta(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // ID do documento a ser atualizado
+      const pdf = req.file; // Arquivo enviado no upload
+      const { tipoDocumentoId, descricao } = req.body; // Dados enviados no corpo da requisição
+  
+      // Verifica se o ID foi fornecido
+      if (!id) {
+        return res.status(400).json({ message: 'ID do documento não fornecido.' });
+      }
+  
+      // Verifica se o documento existe
+      const documentoExiste = await docService.findById(+id);
+      if (!documentoExiste.ok) {
+        return res.status(404).json({ message: 'Documento não encontrado.' });
+      }
+  
+      // Prepara os dados para atualização
+      const documentoAtualizado = {
+        tipoDocumentoId: tipoDocumentoId ? +tipoDocumentoId : undefined,
+        descricao: descricao || undefined,
+        caminho: pdf ? `atas/${pdf.filename}` : undefined, // Atualiza o caminho se o arquivo for enviado
+      };
+  
+      // Chama o serviço de atualização
+      const resposta = await docService.updateAta(+id, documentoAtualizado);
+  
+      if (resposta.ok) {
+        return res.json(resposta.data);
+      } else {
+        return res.status(500).json({ message: 'Erro ao atualizar o documento. Tente novamente.' });
+      }
+    } catch (error) {
+      console.error('Erro no controlador update:', error);
+      return res.status(500).json({ message: 'Erro interno no servidor.' });
+    }
+  }
+  
+
   async update(req: Request, res: Response) {
     const { id } = req.params;
     const pdf = req.file;
@@ -152,4 +191,20 @@ export default class DocumentoController {
       return res.status(StatusCodes.OK).send([]); // Retorna uma lista vazia com status 200
     }
   }
+
+  async getLastDocumentoTipo20(req: Request, res: Response) {
+    try {
+      const documento = await docService.findLastDocumentoTipo20();
+  
+      if (documento) {
+        return res.status(StatusCodes.OK).json(documento);
+      } else {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: 'Nenhum documento encontrado para o tipo especificado.' });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar o último documento:', error);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Erro interno do servidor.' });
+    }
+  }
+  
 }

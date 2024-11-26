@@ -83,6 +83,41 @@ export default class DocumentoService {
     }
   }
 
+  async updateAta(id: number, doc: Partial<Omit<DocumentoScan, 'id'>>) {
+    try {
+      // Verifica se o documento existe
+      const documentoExiste = await prisma.documentoScan.findUnique({
+        where: { id },
+      });
+  
+      if (!documentoExiste) {
+        return {
+          ok: false,
+          message: 'Documento não encontrado.',
+        };
+      }
+  
+      // Atualiza o documento com os dados fornecidos
+      const documentoAtualizado = await prisma.documentoScan.update({
+        where: { id },
+        data: {
+          caminho: doc.caminho || documentoExiste.caminho, // Atualiza somente se fornecido
+          updatedAt: new Date(), // Atualiza a data de modificação
+          descricao: doc.descricao || documentoExiste.descricao,
+          tipoDocumentoId: doc.tipoDocumentoId || documentoExiste.tipoDocumentoId,
+        },
+      });
+  
+      return {
+        ok: true,
+        data: documentoAtualizado,
+      };
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
+  }
+  
+
   async update(id: number, pdf: Express.Multer.File) {
     const documentoExiste = await prisma.documentoScan.findUnique({
       where: {
@@ -219,4 +254,24 @@ export default class DocumentoService {
       return ErrorHandler.handleError(error);
     }
   }
+
+  async findLastDocumentoTipo20() {
+    try {
+      const documento = await prisma.documentoScan.findFirst({
+        where: {
+          tipoDocumentoId: 20,
+          deletedAt: null, // Ignora documentos deletados, se aplicável
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return documento;
+    } catch (error) {
+      console.error('Erro ao buscar o último documento do tipo 20:', error);
+      throw error;
+    }
+  }
+
 }
