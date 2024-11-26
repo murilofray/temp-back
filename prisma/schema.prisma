@@ -1,0 +1,817 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Tabelas comuns aos módulos
+model Escola {
+  id              Int               @id @default(autoincrement())
+  apmId           Int?              @map("apm_id")
+  imagensId       Int?              @map("imagens_id")
+  nome            String            @db.VarChar(45)
+  cnpj            String            @db.VarChar(14)
+  inep            String            @db.VarChar(30)
+  atoCriacao      String            @map("ato_criacao") @db.VarChar(60)
+  endereco        String            @db.VarChar(45)
+  email           String            @db.VarChar(90)
+  createdAt       DateTime          @map("created_at")
+  updatedAt       DateTime?         @map("updated_at")
+  deletedAt       DateTime?         @map("deleted_at")
+  Imagens         Imagens?          @relation(fields: [imagensId], references: [id])
+  APM             APM?              @relation(fields: [apmId], references: [id])
+  ContaBancaria   ContaBancaria[]
+  Telefone        Telefone[]
+  PDDE            PDDE[]
+  Servidor        Servidor[]
+  Turma           Turma[]
+  TermoDoacao     TermoDoacao[]
+  OficioMemorando OficioMemorando[]
+  Diretor         Diretor?
+  Ata             Ata[]
+
+  @@map("escola")
+}
+
+model Imagens {
+  id        Int       @id @default(autoincrement())
+  caminho   String    @db.VarChar(255)
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  Escola    Escola[]
+
+  @@map("imagens")
+}
+
+model Telefone {
+  id        Int       @id @default(autoincrement())
+  numero    String    @db.VarChar(11)
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  escolaId  Int       @map("escola_id")
+  Escola    Escola    @relation(fields: [escolaId], references: [id])
+
+  @@map("telefone")
+}
+
+model Diretor {
+  escolaId   Int      @unique @map("escola_id")
+  servidorId Int      @unique @map("servidor_id")
+  Servidor   Servidor @relation(fields: [servidorId], references: [id])
+  Escola     Escola   @relation(fields: [escolaId], references: [id])
+
+  @@id([escolaId, servidorId])
+  @@map("diretor")
+}
+
+model Servidor {
+  id                                  Int                   @id @default(autoincrement())
+  escolaId                            Int?                  @map("escola_id")
+  nome                                String                @db.VarChar(100)
+  rg                                  String                @db.VarChar(11)
+  cpf                                 String                @unique @db.VarChar(11)
+  dataContratacao                     DateTime?             @map("data_contratacao")
+  categoria                           String?               @db.VarChar(100)
+  grau                                String?               @db.VarChar(10)
+  pontuacaoAnual                      Int?                  @map("pontuacao_anual")
+  pontuacaoAssiduidade                Int?                  @map("pontuacao_assiduidade")
+  anoDaUltimaProgressaoPorAssiduidade Int?                  @map("ano_da_ultima_progressao_por_assiduidade") @db.Year
+  anoDaUltimaProgressaoPorTitulo      Int?                  @map("ano_da_ultima_progressao_por_titulo") @db.Year
+  anoDoUltimoQuinquenio               Int?                  @map("ano_do_ultimo_quinquenio") @db.Year
+  aptoParaProgressaoPorAssiduidade    Boolean?              @map("apto_para_progressao_por_assiduidade") @db.TinyInt
+  aptoParaProgressaoPorTitulo         Boolean?              @map("apto_para_progressao_por_titulo") @db.TinyInt
+  email                               String?               @unique @db.VarChar(150)
+  senha                               String?               @db.VarChar(255)
+  createdAt                           DateTime              @map("created_at")
+  updatedAt                           DateTime?             @map("updated_at")
+  deletedAt                           DateTime?             @map("deleted_at")
+  Escola                              Escola?               @relation(fields: [escolaId], references: [id])
+  Diretor                             Diretor?
+  ServidorApm                         ServidorApm[]
+  Ocorrencia                          Ocorrencia[]
+  Progressao                          Progressao[]
+  Titulo                              Titulo[]
+  Quinquenio                          Quinquenio[]
+  NivelAcessoServidor                 NivelAcessoServidor[]
+  Turma                               Turma[]
+  Questionario                        Questionario[]
+  QuestionarioAluno                   QuestionarioAluno[]
+
+  @@map("servidor")
+}
+
+enum NivelAcessoEnum {
+  ADMINISTRADOR
+  DIRETOR
+  VICE_DIRETOR
+  COORDENADOR
+  ESCRITUARIO
+  DOCENTE
+  APM
+}
+
+enum CargoAPMEnum {
+  PRESIDENTE
+  DIRETOR_EXECUTIVO
+  DIRETOR_FINANCEIRO
+  CONSELHEIRO_FISCAL
+}
+
+model NivelAcesso {
+  id             Int                   @id @default(autoincrement())
+  descricao      NivelAcessoEnum       @unique
+  ServidorAcesso NivelAcessoServidor[]
+
+  @@map("nivel_acesso")
+}
+
+model NivelAcessoServidor {
+  servidorId        Int         @map("servidor_id")
+  nivelAcessoId     Int         @map("nivel_acesso_id")
+  diretorTemporario Boolean     @default(false) @map("diretor_temporario") @db.TinyInt
+  Servidor          Servidor    @relation(fields: [servidorId], references: [id])
+  Acesso            NivelAcesso @relation(fields: [nivelAcessoId], references: [id])
+
+  @@id([servidorId, nivelAcessoId])
+  @@map("nivel_acesso_servidor")
+}
+
+model DocumentoScan {
+  id                     Int                      @id @default(autoincrement())
+  tipoDocumentoId        Int                      @map("tipo_documento_id")
+  caminho                String                   @db.VarChar(255)
+  createdAt              DateTime                 @map("created_at")
+  updatedAt              DateTime?                @map("updated_at")
+  deletedAt              DateTime?                @map("deleted_at")
+  descricao              String?                  @db.VarChar(255)
+  TipoDocumento          TipoDocumento            @relation(fields: [tipoDocumentoId], references: [id])
+  MovimentacaoFinanceira MovimentacaoFinanceira[]
+  Ata                    Ata[]
+  NotaFiscal             NotaFiscal[]
+  AlunoDocumentos        AlunoDocumento[]
+  TermoDoacao            TermoDoacao[]
+  OficioMemorando        OficioMemorando[]
+  Ocorrencia             Ocorrencia[]
+  Titulo                 Titulo[]
+  PesquisaPrecoA         PesquisaPreco[]          @relation("DocumentoScanA")
+  PesquisaPrecoB         PesquisaPreco[]          @relation("DocumentoScanB")
+  PesquisaPrecoC         PesquisaPreco[]          @relation("DocumentoScanC")
+
+  @@map("documento_scan")
+}
+
+// Enum para tipos de documento
+enum TipoDocumentoEnum {
+  ATA_ASSINADA
+  CERTIDAO_NASCIMENTO
+  NOTA_FISCAL
+  ORCAMENTO
+  RECIBO
+  NIS
+  LAUDO
+  ATESTADO
+  CERTIFICADO
+  MEMORANDO
+  OFICIO
+  TOMBAMENTO
+  TERMO_DOACAO
+  RG
+  CPF
+  DECLARACAO_VACINACAO
+  COMPROVANTE_RESIDENCIA
+  DOCUMENTO_DO_RESPONSAVEL
+  AUTODECLARACAO_RACIAL
+  TABELA_VENCIMENTO
+}
+
+model TipoDocumento {
+  id             Int               @id @default(autoincrement())
+  descricao      TipoDocumentoEnum @unique
+  DocumentosScan DocumentoScan[]
+
+  @@map("tipo_documento")
+}
+
+// Módulo: Prestação de Contas
+/// -- Seção APM e Atas
+model APM {
+  id           Int           @id @default(autoincrement())
+  vigente      Int
+  dataFormacao DateTime      @map("data_formacao")
+  createdAt    DateTime      @map("created_at")
+  updatedAt    DateTime?     @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  Escola       Escola[]
+  ServidorApm  ServidorApm[]
+
+  @@map("apm")
+}
+
+model ServidorApm {
+  servidorId Int
+  apmId      Int
+  cargoAPMId Int
+  Servidor   Servidor @relation(fields: [servidorId], references: [id])
+  APM        APM      @relation(fields: [apmId], references: [id])
+  CargoAPM   CargoAPM @relation(fields: [cargoAPMId], references: [id])
+
+  @@id([servidorId, apmId])
+  @@map("servidor_apm")
+}
+
+model CargoAPM {
+  id          Int           @id @default(autoincrement())
+  descricao   CargoAPMEnum  @unique
+  ServidorApm ServidorApm[]
+
+  @@map("cargo_apm")
+}
+
+model Ata {
+  id               Int            @id @default(autoincrement())
+  escolaId         Int            @map("escola_id")
+  documentosScanId Int?           @map("documentos_scan_id") // Ata assinada
+  titulo           String         @db.VarChar(80)
+  ata              String
+  data             DateTime
+  createdAt        DateTime       @map("created_at")
+  updatedAt        DateTime?      @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+  Escola           Escola         @relation(fields: [escolaId], references: [id])
+  DocumentosScan   DocumentoScan? @relation(fields: [documentosScanId], references: [id])
+
+  @@map("ata")
+}
+
+// Remover o modelo AtaGerirAta, pois agora não é mais necessário
+
+model OficioMemorando {
+  id              Int            @id @default(autoincrement())
+  escolaId        Int            @map("escola_id")
+  documentoScanId Int?           @map("documento_scan_id")
+  titulo          String         @db.VarChar(255)
+  tipo            String         @db.VarChar(60)
+  data            DateTime
+  createdAt       DateTime       @map("created_at")
+  updatedAt       DateTime?      @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  Escola          Escola         @relation(fields: [escolaId], references: [id])
+  DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
+
+  @@map("oficio_memorando")
+}
+
+/// -----
+/// Seção Prestação de Contas: Programa e Contas
+model PDDE {
+  id              Int               @id @default(autoincrement())
+  escolaId        Int               @map("escola_id")
+  contaBancariaId Int               @map("conta_bancaria_id")
+  tipo            String            @db.VarChar(60)
+  createdAt       DateTime          @map("created_at")
+  updatedAt       DateTime?         @map("updated_at")
+  deletedAt       DateTime?         @map("deleted_at")
+  Escola          Escola            @relation(fields: [escolaId], references: [id])
+  ContaBancaria   ContaBancaria     @relation(fields: [contaBancariaId], references: [id])
+  Programa        Programa[]
+  SaldoPDDE       SaldoPDDE[]
+  PrestacaoContas PrestacaoContas[]
+
+  @@map("pdde")
+}
+
+model SaldoPDDE {
+  id           Int       @id @default(autoincrement())
+  saldoPDDEId  Int       @map("saldo_PDDE_id") //É para ser o id do PDDE associado ao esse saldo
+  valor        Decimal   @db.Decimal(8, 2)
+  custeio      Decimal   @db.Decimal(5, 2) // Porcentagem do valor destinado ao custeio
+  capital      Decimal   @db.Decimal(5, 2) // Porcentagem do valor destinado ao capital
+  custeioValor Decimal   @map("custeio_valor") @db.Decimal(8, 2) // Valor atual disponível no custeio
+  capitalValor Decimal   @map("capital_valor") @db.Decimal(8, 2) // Valor atual disponível no capital
+  createdAt    DateTime  @map("created_at")
+  updatedAt    DateTime? @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  PDDE         PDDE      @relation(fields: [saldoPDDEId], references: [id])
+
+  @@map("saldo_pdde")
+}
+
+model Programa {
+  id            Int             @id @default(autoincrement())
+  pddeId        Int             @map("pdde_id")
+  nome          String          @db.VarChar(255)
+  createdAt     DateTime        @map("created_at")
+  updatedAt     DateTime?       @map("updated_at")
+  deletedAt     DateTime?       @map("deleted_at")
+  PDDE          PDDE            @relation(fields: [pddeId], references: [id])
+  PesquisaPreco PesquisaPreco[]
+
+  @@map("programa")
+}
+
+model ContaBancaria {
+  id                     Int                      @id @default(autoincrement())
+  escolaId               Int                      @map("escola_id")
+  agencia                String                   @db.VarChar(10)
+  numeroConta            String                   @map("numero_conta") @db.VarChar(10)
+  banco                  String                   @db.VarChar(30)
+  createdAt              DateTime                 @map("created_at")
+  updatedAt              DateTime?                @map("updated_at")
+  deletedAt              DateTime?                @map("deleted_at")
+  Escola                 Escola                   @relation(fields: [escolaId], references: [id])
+  SaldoBancario          SaldoBancario[]
+  MovimentacaoFinanceira MovimentacaoFinanceira[]
+  PDDE                   PDDE[]
+
+  @@map("conta_bancaria")
+}
+
+model SaldoBancario {
+  id              Int           @id @default(autoincrement())
+  contaBancariaId Int           @map("conta_bancaria_id")
+  ano             Int
+  saldoFinal      Decimal       @map("saldo_final") @db.Decimal(8, 2)
+  createdAt       DateTime      @map("created_at")
+  updatedAt       DateTime?     @map("updated_at")
+  ContaBancaria   ContaBancaria @relation(fields: [contaBancariaId], references: [id])
+
+  @@map("saldo_bancario")
+}
+
+model MovimentacaoFinanceira {
+  id              Int            @id @default(autoincrement())
+  contaBancariaId Int            @map("conta_bancaria_id")
+  documentoScanId Int?           @map("documento_scan_id") // Recibo
+  data            DateTime?
+  valor           Decimal?       @db.Decimal(8, 2)
+  descricao       String?        @db.VarChar(255)
+  tipo            String         @db.VarChar(1) // (E)ntrada ou (S)aída
+  capitalCusteio  String         @map("custeio_capital") @db.VarChar(7) // Custeio ou Capital
+  createdAt       DateTime       @map("created_at")
+  updatedAt       DateTime?      @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  ContaBancaria   ContaBancaria  @relation(fields: [contaBancariaId], references: [id])
+  DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
+
+  @@map("movimentacao_financeira")
+}
+
+/// -----
+/// Seção Prestação de Contas: Aquisição de Bens e Serviços
+model PrestacaoContas {
+  id            Int             @id @default(autoincrement())
+  pDDEId        Int             @map("pdde_id")
+  ano           Int
+  entregue      Boolean         @db.TinyInt
+  createdAt     DateTime        @map("created_at")
+  updatedAt     DateTime?       @map("updated_at")
+  deletedAt     DateTime?       @map("deleted_at")
+  PDDE          PDDE            @relation(fields: [pDDEId], references: [id])
+  PesquisaPreco PesquisaPreco[]
+
+  @@map("prestacao_contas")
+}
+
+model PesquisaPreco {
+  id                Int             @id @default(autoincrement())
+  prestacaoContasId Int             @map("prestacao_contas_id")
+  tipo              String          @db.VarChar(1)
+  titulo            String          @db.VarChar(60)
+  proponenteA       Int?            @map("proponente_a")
+  orcamentoA        Int?            @map("orcamento_a")
+  proponenteB       Int?            @map("proponente_b")
+  orcamentoB        Int?            @map("orcamento_b")
+  proponenteC       Int?            @map("proponente_c")
+  orcamentoC        Int?            @map("orcamento_c")
+  programaId        Int?            @map("programa_id")
+  consolidado       Boolean         @default(false) @db.TinyInt
+  createdAt         DateTime        @map("created_at")
+  updatedAt         DateTime?       @map("updated_at")
+  deletedAt         DateTime?       @map("deleted_at")
+  PrestacaoContas   PrestacaoContas @relation(fields: [prestacaoContasId], references: [id])
+  DocumentoScanA    DocumentoScan?  @relation("DocumentoScanA", fields: [orcamentoA], references: [id])
+  DocumentoScanB    DocumentoScan?  @relation("DocumentoScanB", fields: [orcamentoB], references: [id])
+  DocumentoScanC    DocumentoScan?  @relation("DocumentoScanC", fields: [orcamentoC], references: [id])
+  Programa          Programa?       @relation(fields: [programaId], references: [id])
+
+  Bem     Bem[]
+  Servico Servico[]
+
+  @@map("pesquisa_preco")
+}
+
+model Bem {
+  id               Int           @id @default(autoincrement())
+  pesquisaPrecoId  Int           @map("pesquisa_preco_id")
+  notaFiscalId     Int?          @map("nota_fiscal_id")
+  termoDoacaoId    Int?          @map("termo_doacao_id")
+  descricao        String        @db.VarChar(60)
+  menorValor       Decimal?      @map("menor_valor") @db.Decimal(8, 2)
+  quantidade       Int           @map("quantidade")
+  justificativa    String?       @db.VarChar(255)
+  aprovado         Boolean?      @default(false) @db.TinyInt()
+  melhorProponente Int?          @map("melhor_proponente")
+  createdAt        DateTime      @map("created_at")
+  updatedAt        DateTime?     @map("updated_at")
+  deletedAt        DateTime?     @map("deleted_at")
+  PesquisaPreco    PesquisaPreco @relation(fields: [pesquisaPrecoId], references: [id])
+  NotaFiscal       NotaFiscal?   @relation(fields: [notaFiscalId], references: [id])
+  TermoDoacao      TermoDoacao?  @relation(fields: [termoDoacaoId], references: [id])
+  PropostaBem      PropostaBem[]
+
+  @@map("bem")
+}
+
+model PropostaBem {
+  bemId        Int        @map("bem_id")
+  fornecedorId Int        @map("fornecedor_id")
+  valor        Decimal    @db.Decimal(8, 2)
+  createdAt    DateTime   @map("created_at")
+  updatedAt    DateTime?  @map("updated_at")
+  Bem          Bem        @relation(fields: [bemId], references: [id])
+  Fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
+
+  @@id([bemId, fornecedorId])
+  @@map("proposta_bem")
+}
+
+model Servico {
+  id               Int               @id @default(autoincrement())
+  pesquisaPrecoId  Int               @map("pesquisa_preco_id")
+  notaFiscalId     Int?              @map("nota_fiscal_id")
+  descricao        String            @db.VarChar(60)
+  menorValor       Decimal?          @map("menor_valor") @db.Decimal(8, 2)
+  justificativa    String?           @db.VarChar(255)
+  aprovado         Boolean?          @default(false) @db.TinyInt()
+  melhorProponente Int?              @map("melhor_proponente")
+  createdAt        DateTime          @map("created_at")
+  updatedAt        DateTime?         @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  PesquisaPreco    PesquisaPreco     @relation(fields: [pesquisaPrecoId], references: [id])
+  NotaFiscal       NotaFiscal?       @relation(fields: [notaFiscalId], references: [id])
+  PropostaServico  PropostaServico[]
+
+  @@map("servico")
+}
+
+model PropostaServico {
+  servicoId    Int        @map("servico_id")
+  fornecedorId Int        @map("fornecedor_id")
+  valor        Decimal    @db.Decimal(8, 2)
+  createdAt    DateTime   @map("created_at")
+  updatedAt    DateTime?  @map("updated_at")
+  Servico      Servico    @relation(fields: [servicoId], references: [id])
+  Fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
+
+  @@id([servicoId, fornecedorId])
+  @@map("proposta_servico")
+}
+
+model NotaFiscal {
+  id              Int            @id @default(autoincrement())
+  fornecedorId    Int            @map("fornecedor_id")
+  documentoScanId Int?           @map("documento_scan_id")
+  createdAt       DateTime       @map("created_at")
+  updatedAt       DateTime?      @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
+  Fornecedor      Fornecedor     @relation(fields: [fornecedorId], references: [id])
+  Bem             Bem[]
+  Servico         Servico[]
+
+  @@map("nota_fiscal")
+}
+
+model Fornecedor {
+  id           Int       @id @default(autoincrement())
+  cnpj         String?   @unique @db.VarChar(14)
+  cpf          String?   @unique @db.VarChar(11)
+  cidade       String    @db.VarChar(60)
+  endereco     String    @db.VarChar(60)
+  responsavel  String?   @db.VarChar(60)
+  nomeFantasia String?   @map("nome_fantasia") @db.VarChar(60)
+  telefone     String    @db.VarChar(60)
+  email        String?   @unique @db.VarChar(60)
+  razaoSocial  String    @map("razao_social") @db.VarChar(60)
+  createdAt    DateTime  @map("created_at")
+  updatedAt    DateTime? @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  NotaFiscal      NotaFiscal[]
+  PropostaBem     PropostaBem[]
+  PropostaServico PropostaServico[]
+
+  @@map("fornecedor")
+}
+
+model TermoDoacao {
+  id              Int            @id @default(autoincrement())
+  escolaId        Int            @map("escola_id")
+  documentoScanId Int?           @map("documento_scan_id")
+  conteudo        String         @map("conteudo") @db.Text
+  data            DateTime
+  createdAt       DateTime       @map("created_at")
+  updatedAt       DateTime?      @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  Escola          Escola         @relation(fields: [escolaId], references: [id])
+  DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
+  Bem             Bem[]
+
+  @@map("termo_doacao")
+}
+
+// Módulo: Gestão de Docentes
+model Ocorrencia {
+  id              Int       @id @default(autoincrement())
+  servidorId      Int?      @map("servidor_id")
+  documentoScanId Int?      @map("documento_scan_id") // Atestado
+  abonoId         Int?      @map("abono_id")
+  lancadoPor      Int?      @map("lancado_por")
+  dataOcorrencia  DateTime? @map("data_ocorrencia")
+  descricao       String?   @db.Text
+  motivo          String?   @db.Text
+  aprovadoPor     Int?
+  status          String?   @db.VarChar(45) // Novo atributo status como varchar(45)
+  createdAt       DateTime? @map("created_at")
+  updatedAt       DateTime? @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  Servidor      Servidor?      @relation(fields: [servidorId], references: [id])
+  DocumentoScan DocumentoScan? @relation(fields: [documentoScanId], references: [id])
+  Abono         Abono?         @relation(fields: [abonoId], references: [id])
+
+  @@map("ocorrencia")
+}
+
+model Abono {
+  id            Int          @id @default(autoincrement())
+  nome          String       @db.VarChar(75)
+  abona         Boolean      @db.TinyInt
+  maximoDiasAno Int          @map("maximo_dias_ano")
+  maximoDiasMes Int          @map("maximo_dias_mes")
+  Ocorrencia    Ocorrencia[]
+
+  @@map("abono")
+}
+
+model Progressao {
+  id          Int       @id @default(autoincrement())
+  servidorId  Int       @map("servidor_id")
+  data        DateTime
+  tipo        String    @db.VarChar(20)
+  aprovado    Boolean?  @db.TinyInt
+  detalhes    String?   @db.VarChar(45)
+  aprovadoPor Int?
+  createdAt   DateTime  @map("created_at")
+  updatedAt   DateTime? @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  Servidor    Servidor  @relation(fields: [servidorId], references: [id])
+
+  @@map("progressao")
+}
+
+model Titulo {
+  id                   Int                  @id @default(autoincrement())
+  servidorId           Int                  @map("servidor_id")
+  documentoScanId      Int?                 @map("documento_scan_id") // Certificado
+  nome                 String               @db.VarChar(75)
+  status               String?              @db.VarChar(35)
+  instituicao          String               @db.VarChar(75)
+  data                 DateTime
+  tipoId               Int                  @map("tipo_id") // Referencia CategoriaCertificado
+  cargaHoraria         Int                  @map("carga_horaria")
+  pontos               Float?               @map("pontos")
+  dataConclusao        DateTime             @map("data_conclusao")
+  validade             DateTime?
+  aprovadoPor          Int?
+  createdAt            DateTime             @map("created_at")
+  updatedAt            DateTime?            @map("updated_at")
+  deletedAt            DateTime?            @map("deleted_at")
+  Servidor             Servidor             @relation(fields: [servidorId], references: [id])
+  DocumentoScan        DocumentoScan?       @relation(fields: [documentoScanId], references: [id])
+  CategoriaCertificado CategoriaCertificado @relation(fields: [tipoId], references: [id])
+
+  @@map("titulo")
+}
+
+model CategoriaCertificado {
+  id            Int      @id @default(autoincrement())
+  nome          String   @db.VarChar(100)
+  pontosPorHora Float?   @map("pontos_por_hora")
+  horasMinimas  Int?     @map("horas_minimas")
+  horasMaximas  Int?     @map("horas_maximas")
+  Titulo        Titulo[] // Relação inversa para os títulos
+}
+
+model Quinquenio {
+  id          Int       @id @default(autoincrement())
+  servidorId  Int       @map("servidor_id")
+  dataInicio  DateTime  @map("data_inicio")
+  dataFim     DateTime  @map("data_fim")
+  licenca     Boolean   @db.TinyInt
+  adicional   Decimal?  @db.Decimal(8, 2)
+  detalhes    String?   @db.Text
+  aprovadoPor Int?
+  createdAt   DateTime  @map("created_at")
+  updatedAt   DateTime? @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  Servidor    Servidor  @relation(fields: [servidorId], references: [id])
+
+  @@map("quinquenio")
+}
+
+model configuracao {
+  id                     Int       @id @default(autoincrement())
+  anoLetivo              Int       @map("ano_letivo") @db.Year
+  InicioAnoLetivo        DateTime  @map("inicio_ano_letivo")
+  FimAnoLetivo           DateTime  @map("fim_ano_letivo")
+  tempoMinimoAssiduidade Int       @map("tempo_minimo_assiduidade")
+  tempoMinimoTitulo      Int       @map("tempo_minimo_titulo")
+  createdAt              DateTime  @map("created_at")
+  updatedAt              DateTime? @map("updated_at")
+  deletedAt              DateTime? @map("deleted_at")
+
+  @@map("configuracao")
+}
+
+model Secretaria {
+  id        Int       @id @default(autoincrement())
+  nome      String    @db.VarChar(75)
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("secretaria")
+}
+
+// Módulo: Gestão Acadêmica
+model Turma {
+  id         Int       @id @default(autoincrement())
+  escolaId   Int       @map("escola_id")
+  servidorId Int       @map("servidor_id")
+  anoLetivo  Int?      @map("ano_letivo")
+  ano        String?   @db.VarChar(6)
+  letra      String?   @db.Char(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  Servidor   Servidor  @relation(fields: [servidorId], references: [id])
+  Escola     Escola    @relation(fields: [escolaId], references: [id])
+  Aluno      Aluno[]
+
+  @@map("turma")
+}
+
+model Aluno {
+  id                Int                 @id @default(autoincrement())
+  turmaId           Int?                @map("turma_id")
+  ra                String              @db.VarChar(45)
+  nome              String              @db.VarChar(255)
+  nomeMae           String              @map("nome_mae") @db.VarChar(255)
+  cpf               String              @db.VarChar(11)
+  dataNascimento    DateTime            @map("data_nascimento")
+  celular           String?             @db.Char(11)
+  sexo              String              @db.Char(1)
+  raca              String              @db.Char(8)
+  beneficiarioBF    Boolean             @db.TinyInt
+  logradouro        String              @db.VarChar(255)
+  numero            String              @db.VarChar(6)
+  bairro            String              @db.VarChar(255)
+  cep               String              @db.VarChar(9)
+  cidade            String              @db.VarChar(255)
+  uf                String              @db.Char(2)
+  createdAt         DateTime            @map("created_at")
+  updatedAt         DateTime?           @map("updated_at")
+  deletedAt         DateTime?           @map("deleted_at")
+  isDisabled        Boolean             @default(false) @map("is_disabled")
+  Turma             Turma?              @relation(fields: [turmaId], references: [id])
+  AlunoDocumentos   AlunoDocumento[]
+  AlunoAlergia      AlunoAlergia[]
+  QuestionarioAluno QuestionarioAluno[]
+
+  @@map("aluno")
+}
+
+model AlunoDocumento {
+  // Revisar esta solução
+  documentoScanId Int           @map("documento_scan_id") // Documento escaneado do aluno
+  alunoId         Int           @map("aluno_documento_id")
+  DocumentosScan  DocumentoScan @relation(fields: [documentoScanId], references: [id])
+  Aluno           Aluno         @relation(fields: [alunoId], references: [id])
+
+  @@id([documentoScanId, alunoId])
+  @@map("aluno_documento")
+}
+
+model Alergia {
+  id            Int            @id @default(autoincrement())
+  descricao     String?        @db.VarChar(45)
+  tipoAlergiaId Int            @map("tipo_alergia_id")
+  tipoAlergia   TipoAlergia    @relation(fields: [tipoAlergiaId], references: [id])
+  AlunoAlergia  AlunoAlergia[]
+}
+
+model TipoAlergia {
+  id        Int       @id @default(autoincrement())
+  descricao String    @db.VarChar(45)
+  alergias  Alergia[]
+
+  @@map("tipo_alergia")
+}
+
+model AlunoAlergia {
+  alunoId   Int
+  alergiaId Int
+  Aluno     Aluno   @relation(fields: [alunoId], references: [id])
+  Alergia   Alergia @relation(fields: [alergiaId], references: [id])
+
+  @@id([alunoId, alergiaId])
+  @@map("aluno_alergia")
+}
+
+model Questionario {
+  id          Int        @id @default(autoincrement())
+  servidorId  Int        @map("servidor_id")
+  dataCriacao DateTime?  @map("data_criacao")
+  descricao   String?    @db.Text
+  createdAt   DateTime   @map("created_at")
+  updatedAt   DateTime?  @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+  Servidor    Servidor   @relation(fields: [servidorId], references: [id])
+  Pergunta    Pergunta[]
+
+  @@map("questionario")
+}
+
+model Pergunta {
+  id             Int          @id @default(autoincrement())
+  questionarioId Int          @map("questionario_id")
+  descricao      String?
+  tipo           String?      @db.VarChar(45)
+  numero         Int?
+  createdAt      DateTime     @map("created_at")
+  updatedAt      DateTime?    @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
+  Questionario   Questionario @relation(fields: [questionarioId], references: [id])
+  Opcao          Opcao[]
+  Resposta       Resposta[]
+
+  @@map("pergunta")
+}
+
+model Resposta {
+  id                  Int               @id @default(autoincrement())
+  perguntaId          Int               @map("pergunta_id")
+  questionarioAlunoId Int               @map("questionario_aluno_id")
+  resposta            String?           @db.Text
+  createdAt           DateTime          @map("created_at")
+  updatedAt           DateTime?         @map("updated_at")
+  deletedAt           DateTime?         @map("deleted_at")
+  QuestionarioAluno   QuestionarioAluno @relation(fields: [questionarioAlunoId], references: [id])
+  Pergunta            Pergunta          @relation(fields: [perguntaId], references: [id])
+  OpcaoResposta       OpcaoResposta[]
+
+  @@map("resposta")
+}
+
+model Opcao {
+  id            Int             @id @default(autoincrement())
+  perguntaId    Int             @map("pergunta_id")
+  descricao     String?         @db.Text
+  Pergunta      Pergunta        @relation(fields: [perguntaId], references: [id])
+  OpcaoResposta OpcaoResposta[]
+
+  @@map("opcao")
+}
+
+model OpcaoResposta {
+  opcaoId           Int
+  respostaId        Int
+  respostaDescricao String?  @map("resposta_descricao") @db.Text
+  Opcao             Opcao    @relation(fields: [opcaoId], references: [id])
+  Resposta          Resposta @relation(fields: [respostaId], references: [id])
+
+  @@id([opcaoId, respostaId])
+  @@map("opcao_resposta")
+}
+
+model QuestionarioAluno {
+  id         Int        @id @default(autoincrement())
+  alunoId    Int        @map("aluno_id")
+  servidorId Int        @map("servidor_id")
+  dataInicio DateTime?  @map("data_inicio")
+  dataFim    DateTime?  @map("data_fim")
+  createdAt  DateTime   @map("created_at")
+  updatedAt  DateTime?  @map("updated_at")
+  deletedAt  DateTime?  @map("deleted_at")
+  Aluno      Aluno      @relation(fields: [alunoId], references: [id])
+  Servidor   Servidor   @relation(fields: [servidorId], references: [id])
+  Resposta   Resposta[]
+
+  @@map("questionario_aluno")
+}
