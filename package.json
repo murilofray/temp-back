@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npm run trigger && prisma generate && ts-node-dev ./src/server.ts",
-    "start": "node ./dist/server.js",
+    "start": "node ./dist/src/server.js",
     "build": "prisma generate && tsc",
     "migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
