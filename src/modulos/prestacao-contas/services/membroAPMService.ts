@@ -30,23 +30,23 @@ export const createMembroAPMService = async (data: CreateMembroAPMDTO) => {
       });
   
       // Associar o servidor à tabela servidor_apm
-      const servidorApm = await prisma.servidorApm.create({
-        data: {
-          servidorId: servidor.id,
-          apmId: data.apmId,
-          cargoAPMId: data.cargoAPMId,
-        },
-      });
+      // const servidorApm = await prisma.servidorApm.create({
+      //   data: {
+      //     servidorId: servidor.id,
+      //     apmId: data.apmId,
+      //     cargoAPMId: data.cargoAPMId,
+      //   },
+      // });
   
       // Adicionar uma entrada em nivel_acesso_servidor com nivelAcessoId = 7
-      const nivelAcessoServidor = await prisma.nivelAcessoServidor.create({
-        data: {
-          servidorId: servidor.id,
-          nivelAcessoId: 7, // Valor fixo para o nível de acesso
-          diretorTemporario: false,
-        },
-      });
+      // const nivelAcessoServidor = await prisma.nivelAcessoServidor.create({
+      //   data: {
+      //     servidorId: servidor.id,
+      //     nivelAcessoId: 7, // Valor fixo para o nível de acesso
+      //     diretorTemporario: false,
+      //   },
+      // });
   
-      return { servidor, servidorApm, nivelAcessoServidor };
+      // return { servidor, servidorApm, nivelAcessoServidor };
     });
   };

@@ -224,7 +224,7 @@ async function seedServidor(idEscola: number[], prisma: PrismaClient) {
       grau: '',
       pontuacaoAnual: 0,
       pontuacaoAssiduidade: 0,
-      email: 'escrituario-a@escola.com',
+      email: 'escriturario-a@escola.com',
       senha: await bcrypt.hash('12345', SALT_ROUNDS),
     },
     //6
@@ -336,7 +336,7 @@ async function seedServidor(idEscola: number[], prisma: PrismaClient) {
       grau: '',
       pontuacaoAnual: 0,
       pontuacaoAssiduidade: 0,
-      email: 'escrituario-b@escola.com',
+      email: 'escriturario-b@escola.com',
       senha: await bcrypt.hash('12345', SALT_ROUNDS),
     },
     //14

@@ -10,7 +10,7 @@ datasource db {
 // Tabelas comuns aos módulos
 model Escola {
   id              Int               @id @default(autoincrement())
-  apmId           Int?              @map("apm_id")
+  apmId           Int?              @unique @map("apm_id")
   imagensId       Int?              @map("imagens_id")
   nome            String            @db.VarChar(45)
   cnpj            String            @db.VarChar(14)
@@ -92,7 +92,7 @@ model Servidor {
   deletedAt                           DateTime?             @map("deleted_at")
   Escola                              Escola?               @relation(fields: [escolaId], references: [id])
   Diretor                             Diretor?
-  ServidorApm                         ServidorApm[]
+  ServidorApm                         ServidorAPM[]
   Ocorrencia                          Ocorrencia[]
   Progressao                          Progressao[]
   Titulo                              Titulo[]
@@ -201,35 +201,42 @@ model TipoDocumento {
 /// -- Seção APM e Atas
 model APM {
   id           Int           @id @default(autoincrement())
-  vigente      Int
+  cnpj         String        @unique @db.VarChar(14)
+  nome         String        @db.VarChar(100)
   dataFormacao DateTime      @map("data_formacao")
   createdAt    DateTime      @map("created_at")
   updatedAt    DateTime?     @map("updated_at")
   deletedAt    DateTime?     @map("deleted_at")
-  Escola       Escola[]
-  ServidorApm  ServidorApm[]
+  Escola       Escola?
+  FormacaoAPM  FormacaoAPM[] @relation("APMFormacoes")
 
   @@map("apm")
 }
 
-model ServidorApm {
-  servidorId Int
-  apmId      Int
-  cargoAPMId Int
-  Servidor   Servidor @relation(fields: [servidorId], references: [id])
-  APM        APM      @relation(fields: [apmId], references: [id])
-  CargoAPM   CargoAPM @relation(fields: [cargoAPMId], references: [id])
+model FormacaoAPM {
+  id          Int           @id @default(autoincrement())
+  apmId       Int           @map("apm_id")
+  dataInicio  DateTime      @map("data_inicio")
+  dataTermino DateTime      @map("data_termino")
+  vigencia    Boolean       @db.TinyInt
+  createdAt   DateTime      @map("created_at")
+  updatedAt   DateTime?     @map("updated_at")
+  ServidorApm ServidorAPM[]
+  APM         APM           @relation("APMFormacoes", fields: [apmId], references: [id])
 
-  @@id([servidorId, apmId])
-  @@map("servidor_apm")
+  @@map("apms")
 }
 
-model CargoAPM {
-  id          Int           @id @default(autoincrement())
-  descricao   CargoAPMEnum  @unique
-  ServidorApm ServidorApm[]
+model ServidorAPM {
+  servidorId    Int          @map("servidor_id")
+  formacaoAPMId Int          @map("apms_id")
+  cargoAPM      CargoAPMEnum @map("cargo_apm")
+  Servidor      Servidor     @relation(fields: [servidorId], references: [id])
+  FormacaoAPM   FormacaoAPM? @relation(fields: [formacaoAPMId], references: [id])
 
-  @@map("cargo_apm")
+  @@id([servidorId, formacaoAPMId])
+  @@unique([servidorId, formacaoAPMId, cargoAPM])
+  @@map("servidor_apm")
 }
 
 model Ata {
@@ -237,8 +244,9 @@ model Ata {
   escolaId         Int            @map("escola_id")
   documentosScanId Int?           @map("documentos_scan_id") // Ata assinada
   titulo           String         @db.VarChar(80)
-  ata              String
+  ata              String?        @db.Text
   data             DateTime
+  tipo             String?        @db.VarChar(45)
   createdAt        DateTime       @map("created_at")
   updatedAt        DateTime?      @map("updated_at")
   deletedAt        DateTime?      @map("deleted_at")
@@ -288,11 +296,11 @@ model PDDE {
 model SaldoPDDE {
   id           Int       @id @default(autoincrement())
   saldoPDDEId  Int       @map("saldo_PDDE_id") //É para ser o id do PDDE associado ao esse saldo
-  valor        Decimal   @db.Decimal(8, 2)
+  valor        Decimal   @db.Decimal(10, 2)
   custeio      Decimal   @db.Decimal(5, 2) // Porcentagem do valor destinado ao custeio
   capital      Decimal   @db.Decimal(5, 2) // Porcentagem do valor destinado ao capital
-  custeioValor Decimal   @map("custeio_valor") @db.Decimal(8, 2) // Valor atual disponível no custeio
-  capitalValor Decimal   @map("capital_valor") @db.Decimal(8, 2) // Valor atual disponível no capital
+  custeioValor Decimal   @map("custeio_valor") @db.Decimal(10, 2) // Valor atual disponível no custeio
+  capitalValor Decimal   @map("capital_valor") @db.Decimal(10, 2) // Valor atual disponível no capital
   createdAt    DateTime  @map("created_at")
   updatedAt    DateTime? @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
@@ -335,7 +343,7 @@ model SaldoBancario {
   id              Int           @id @default(autoincrement())
   contaBancariaId Int           @map("conta_bancaria_id")
   ano             Int
-  saldoFinal      Decimal       @map("saldo_final") @db.Decimal(8, 2)
+  saldoFinal      Decimal       @map("saldo_final") @db.Decimal(10, 2)
   createdAt       DateTime      @map("created_at")
   updatedAt       DateTime?     @map("updated_at")
   ContaBancaria   ContaBancaria @relation(fields: [contaBancariaId], references: [id])
@@ -348,7 +356,7 @@ model MovimentacaoFinanceira {
   contaBancariaId Int            @map("conta_bancaria_id")
   documentoScanId Int?           @map("documento_scan_id") // Recibo
   data            DateTime?
-  valor           Decimal?       @db.Decimal(8, 2)
+  valor           Decimal?       @db.Decimal(10, 2)
   descricao       String?        @db.VarChar(255)
   tipo            String         @db.VarChar(1) // (E)ntrada ou (S)aída
   capitalCusteio  String         @map("custeio_capital") @db.VarChar(7) // Custeio ou Capital
@@ -398,78 +406,46 @@ model PesquisaPreco {
   DocumentoScanB    DocumentoScan?  @relation("DocumentoScanB", fields: [orcamentoB], references: [id])
   DocumentoScanC    DocumentoScan?  @relation("DocumentoScanC", fields: [orcamentoC], references: [id])
   Programa          Programa?       @relation(fields: [programaId], references: [id])
-
-  Bem     Bem[]
-  Servico Servico[]
+  Item              Item[]
 
   @@map("pesquisa_preco")
 }
 
-model Bem {
-  id               Int           @id @default(autoincrement())
-  pesquisaPrecoId  Int           @map("pesquisa_preco_id")
-  notaFiscalId     Int?          @map("nota_fiscal_id")
-  termoDoacaoId    Int?          @map("termo_doacao_id")
-  descricao        String        @db.VarChar(60)
-  menorValor       Decimal?      @map("menor_valor") @db.Decimal(8, 2)
-  quantidade       Int           @map("quantidade")
-  justificativa    String?       @db.VarChar(255)
-  aprovado         Boolean?      @default(false) @db.TinyInt()
-  melhorProponente Int?          @map("melhor_proponente")
-  createdAt        DateTime      @map("created_at")
-  updatedAt        DateTime?     @map("updated_at")
-  deletedAt        DateTime?     @map("deleted_at")
-  PesquisaPreco    PesquisaPreco @relation(fields: [pesquisaPrecoId], references: [id])
-  NotaFiscal       NotaFiscal?   @relation(fields: [notaFiscalId], references: [id])
-  TermoDoacao      TermoDoacao?  @relation(fields: [termoDoacaoId], references: [id])
-  PropostaBem      PropostaBem[]
+model Item {
+  id               Int            @id @default(autoincrement())
+  pesquisaPrecoId  Int            @map("pesquisa_preco_id")
+  notaFiscalId     Int?           @map("nota_fiscal_id")
+  termoDoacaoId    Int?           @map("termo_doacao_id")
+  descricao        String         @db.VarChar(60)
+  menorValor       Decimal?       @map("menor_valor") @db.Decimal(10, 2)
+  quantidade       Decimal        @map("quantidade") @db.Decimal(10, 3)
+  unidade          String         @default("un.") @db.VarChar(5)
+  justificativa    String?        @db.VarChar(255)
+  aprovado         Boolean?       @default(false) @db.TinyInt()
+  melhorProponente Int?           @map("melhor_proponente")
+  createdAt        DateTime       @map("created_at")
+  updatedAt        DateTime?      @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+  PesquisaPreco    PesquisaPreco  @relation(fields: [pesquisaPrecoId], references: [id])
+  NotaFiscal       NotaFiscal?    @relation(fields: [notaFiscalId], references: [id])
+  TermoDoacao      TermoDoacao?   @relation(fields: [termoDoacaoId], references: [id])
+  PropostaItem     PropostaItem[]
 
-  @@map("bem")
+  @@map("item")
 }
 
-model PropostaBem {
-  bemId        Int        @map("bem_id")
+model PropostaItem {
+  itemId       Int        @map("item_id")
   fornecedorId Int        @map("fornecedor_id")
-  valor        Decimal    @db.Decimal(8, 2)
+  valor        Decimal    @db.Decimal(10, 2)
   createdAt    DateTime   @map("created_at")
   updatedAt    DateTime?  @map("updated_at")
-  Bem          Bem        @relation(fields: [bemId], references: [id])
+  deletedAt    DateTime?  @map("deleted_at")
+  Item         Item       @relation(fields: [itemId], references: [id])
   Fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
 
-  @@id([bemId, fornecedorId])
-  @@map("proposta_bem")
-}
-
-model Servico {
-  id               Int               @id @default(autoincrement())
-  pesquisaPrecoId  Int               @map("pesquisa_preco_id")
-  notaFiscalId     Int?              @map("nota_fiscal_id")
-  descricao        String            @db.VarChar(60)
-  menorValor       Decimal?          @map("menor_valor") @db.Decimal(8, 2)
-  justificativa    String?           @db.VarChar(255)
-  aprovado         Boolean?          @default(false) @db.TinyInt()
-  melhorProponente Int?              @map("melhor_proponente")
-  createdAt        DateTime          @map("created_at")
-  updatedAt        DateTime?         @map("updated_at")
-  deletedAt        DateTime?         @map("deleted_at")
-  PesquisaPreco    PesquisaPreco     @relation(fields: [pesquisaPrecoId], references: [id])
-  NotaFiscal       NotaFiscal?       @relation(fields: [notaFiscalId], references: [id])
-  PropostaServico  PropostaServico[]
-
-  @@map("servico")
-}
-
-model PropostaServico {
-  servicoId    Int        @map("servico_id")
-  fornecedorId Int        @map("fornecedor_id")
-  valor        Decimal    @db.Decimal(8, 2)
-  createdAt    DateTime   @map("created_at")
-  updatedAt    DateTime?  @map("updated_at")
-  Servico      Servico    @relation(fields: [servicoId], references: [id])
-  Fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
-
-  @@id([servicoId, fornecedorId])
-  @@map("proposta_servico")
+  @@id([itemId, fornecedorId])
+  @@map("proposta_item")
 }
 
 model NotaFiscal {
@@ -481,30 +457,27 @@ model NotaFiscal {
   deletedAt       DateTime?      @map("deleted_at")
   DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
   Fornecedor      Fornecedor     @relation(fields: [fornecedorId], references: [id])
-  Bem             Bem[]
-  Servico         Servico[]
+  Item            Item[]
 
   @@map("nota_fiscal")
 }
 
 model Fornecedor {
-  id           Int       @id @default(autoincrement())
-  cnpj         String?   @unique @db.VarChar(14)
-  cpf          String?   @unique @db.VarChar(11)
-  cidade       String    @db.VarChar(60)
-  endereco     String    @db.VarChar(60)
-  responsavel  String?   @db.VarChar(60)
-  nomeFantasia String?   @map("nome_fantasia") @db.VarChar(60)
-  telefone     String    @db.VarChar(60)
-  email        String?   @unique @db.VarChar(60)
-  razaoSocial  String    @map("razao_social") @db.VarChar(60)
-  createdAt    DateTime  @map("created_at")
-  updatedAt    DateTime? @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
-
-  NotaFiscal      NotaFiscal[]
-  PropostaBem     PropostaBem[]
-  PropostaServico PropostaServico[]
+  id           Int            @id @default(autoincrement())
+  cnpj         String?        @unique @db.VarChar(14)
+  cpf          String?        @unique @db.VarChar(11)
+  cidade       String         @db.VarChar(60)
+  endereco     String         @db.VarChar(60)
+  responsavel  String?        @db.VarChar(60)
+  nomeFantasia String?        @map("nome_fantasia") @db.VarChar(60)
+  telefone     String         @db.VarChar(60)
+  email        String?        @unique @db.VarChar(60)
+  razaoSocial  String         @map("razao_social") @db.VarChar(60)
+  createdAt    DateTime       @map("created_at")
+  updatedAt    DateTime?      @map("updated_at")
+  deletedAt    DateTime?      @map("deleted_at")
+  NotaFiscal   NotaFiscal[]
+  PropostaItem PropostaItem[]
 
   @@map("fornecedor")
 }
@@ -520,7 +493,7 @@ model TermoDoacao {
   deletedAt       DateTime?      @map("deleted_at")
   Escola          Escola         @relation(fields: [escolaId], references: [id])
   DocumentosScan  DocumentoScan? @relation(fields: [documentoScanId], references: [id])
-  Bem             Bem[]
+  Item            Item[] // Mesmo sendo apenas para bem
 
   @@map("termo_doacao")
 }

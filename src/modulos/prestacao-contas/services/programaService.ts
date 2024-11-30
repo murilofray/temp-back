@@ -16,16 +16,17 @@ export class ProgramaService {
       if (!programaExiste) {
         return { ok: false, data: StatusCodes.BAD_REQUEST };
       } else {
-        const updateServico = await prisma.servico.update({
+        const updatePrograma = await prisma.programa.update({
           where: {
             id: +id,
           },
           data: {
-            ...programa,
+            pddeId: programa.pddeId,
+            nome: programa.nome,
             updatedAt: new Date(),
           },
         });
-        return { ok: true, data: updateServico };
+        return { ok: true, data: updatePrograma };
       }
     } catch (error) {
       return ErrorHandler.handleError(error);

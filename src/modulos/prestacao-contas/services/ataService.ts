@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ErrorHandler } from '../../../handler/prismaErrorHandler';
 
 export class AtaService {
-  async create(ata: { documentosScanId: number; escolaId: number; titulo: string; ata: string; data: Date }) {
+  async create(ata: { documentosScanId: number; escolaId: number; titulo: string; ata: string; data: Date; tipo : string }) {
     try {
       // Cria a Ata se não houver duplicata
       const createAta = await prisma.ata.create({
@@ -15,6 +15,7 @@ export class AtaService {
           createdAt: new Date(),
           documentosScanId: ata.documentosScanId,
           escolaId: ata.escolaId,
+          tipo: ata.tipo,
         },
       });
 
@@ -38,7 +39,7 @@ export class AtaService {
     }
   }
 
-  async update(id: number, ata: { titulo?: string; ata?: string; data?: Date; documentosScanId?: number }) {
+  async update(id: number, ata: { titulo?: string; ata?: string; data?: Date; documentosScanId?: number; tipo?: string }) {
     try {
       const updatedAta = await prisma.ata.update({
         where: { id },
@@ -47,6 +48,7 @@ export class AtaService {
           ata: ata.ata,
           data: ata.data,
           documentosScanId: ata.documentosScanId,
+          tipo: ata.tipo,
           updatedAt: new Date(),
         },
       });

@@ -1,7 +1,14 @@
-import { DocumentoScan, PrismaClient } from '@prisma/client';
+import { CargoAPMEnum, DocumentoScan, PrismaClient } from '@prisma/client';
 import { TipoDocumentoEnum } from '../../src/enum/TipoDocumentoEnum';
 import bcrypt from 'bcrypt';
-import { createAndSaveDocumento, gerarDataAleatoria } from './util-seed';
+import {
+  createAndSaveDocumento,
+  gerarCNPJ,
+  gerarCPF,
+  gerarDataAleatoria,
+  gerarRG,
+  obterElementosAleatoriosDistintos,
+} from './util-seed';
 
 /**
  * Esta função realiza a semeação das tabelas necessárias para o módulo de Prestação de Contas no banco de dados.
@@ -15,6 +22,13 @@ import { createAndSaveDocumento, gerarDataAleatoria } from './util-seed';
 export async function SeedPrestacao(idEscola: number[], idServidor: number[], prisma: PrismaClient) {
   console.log('\t🕤 Seeding das tabelas do Módulo de Prestação de Contas.');
 
+  // Dados para uma apm
+  const idAPM = await seedAPM(idEscola, prisma);
+  const idFormacaoAPM = await seedFormacaoAPM(idAPM, prisma);
+  const idAssociadoAPM = await seedAssociadoAPM(prisma);
+  await seedServidorAPM(idFormacaoAPM, idAssociadoAPM, prisma);
+
+  // Dados financeiros e pesquisa de preço
   const idContaBancaria = await seedContaBancaria(idEscola, prisma);
   await seedMovimentacaoFinanceira(idContaBancaria, prisma);
   const idPDDE = await seedPDDE(idEscola, idContaBancaria, prisma);
@@ -23,34 +37,135 @@ export async function SeedPrestacao(idEscola: number[], idServidor: number[], pr
   const idFornecedor = await seedFornecedor(prisma);
   const idPrestacaoContas = await seedPrestacaoContas(idPDDE, prisma);
   const pesquisaPreco = await seedPesquisaPreco(idPrestacaoContas, idFornecedor, prisma);
-  const bem = await seedBem(pesquisaPreco, prisma);
-  await seedPropostaBem(pesquisaPreco, bem, prisma);
+  const item = await seedItens(pesquisaPreco, prisma);
+  await seedPropostaItem(pesquisaPreco, item, prisma);
   await seedOrcamento(prisma);
-  await seedAtaComArquivo(prisma, idEscola);
+  await seedAta(prisma, idEscola);
   await seedNotaFiscal(idFornecedor, prisma);
-
   await seedOficioMemorando(idEscola, prisma);
 
   console.log('\t✔  Seeding de Prestação de Contas concluído.');
 }
 
-async function seedAtaComArquivo(prisma: PrismaClient, idEscolas: number[]) {
-  const tde = TipoDocumentoEnum.ATA_ASSINADA;
-  for (const escolaId of idEscolas) {
-    for (let i = 0; i < 4; i++) {
-      await prisma.ata.create({
-        data: {
-          escolaId: escolaId,
-          documentosScanId: (await createAndSaveDocumento(prisma, tde)).id,
-          titulo: `Ata da 00${i + 1} da Escola ${escolaId}`,
-          ata: 'Conteúdo de exemplo para a ata associada ao arquivo-seed.pdf',
-          data: gerarDataAleatoria(),
-          createdAt: new Date(),
-        },
-      });
-    }
+async function seedAPM(idEscola: number[], prisma: PrismaClient) {
+  let idAPM: number[] = [];
+  for (let i = 0; i < idEscola.length; i++) {
+    // Encontrar a escola no banco de dados
+    const escola = await prisma.escola.findUnique({
+      where: {
+        id: idEscola[i],
+      },
+    });
+
+    // Criar a APM para a escola
+    const apm = await prisma.aPM.create({
+      data: {
+        cnpj: gerarCNPJ(),
+        nome: `APM da Escola ${escola?.nome}`,
+        dataFormacao: new Date('1999-01-01'),
+        createdAt: new Date(),
+      },
+    });
+
+    // Atualizar a Escola com sua APM
+    await prisma.escola.update({
+      where: {
+        id: idEscola[i],
+      },
+      data: {
+        apmId: apm.id,
+      },
+    });
+    idAPM.push(apm.id);
   }
-  console.log('\t\t✔   Seeding de Atas concluído.');
+  console.log('\t\t✔  Seeding de APMs concluído.');
+  return idAPM;
+}
+
+async function seedFormacaoAPM(idAPM: number[], prisma: PrismaClient) {
+  let idFormacaoAPM: number[] = [];
+
+  for (let i = 0; i < idAPM.length; i++) {
+    // Criar uma APM vigente para cada Escola
+    const formacaoAPM = await prisma.formacaoAPM.create({
+      data: {
+        apmId: idAPM[i],
+        dataInicio: new Date('2024-03-01'),
+        dataTermino: new Date('2025-02-28'),
+        vigencia: true,
+        createdAt: new Date(),
+      },
+    });
+
+    idFormacaoAPM.push(formacaoAPM.id);
+  }
+  console.log('\t\t✔  Seeding de Formações dos APMs concluído.');
+  return idFormacaoAPM;
+}
+
+async function seedAssociadoAPM(prisma: PrismaClient) {
+  const SALT_ROUNDS = 10;
+  let idAssociadoAPM: number[] = [];
+
+  for (let index = 0; index < 15; index++) {
+    const associadoAPM = await prisma.servidor.create({
+      data: {
+        nome: `Associado APM ${index + 1}`,
+        cpf: gerarCPF(),
+        rg: gerarRG(),
+        email: `apm-${index + 1}@escola.com`,
+        senha: await bcrypt.hash('12345', SALT_ROUNDS),
+        createdAt: new Date(),
+      },
+    });
+    idAssociadoAPM.push(associadoAPM.id);
+  }
+  console.log('\t\t✔  Seeding de Formações dos APMs concluído.');
+  return idAssociadoAPM;
+}
+
+async function seedServidorAPM(idFormacaoAPM: number[], idAssociadoAPM: number[], prisma: PrismaClient) {
+  for (let i = 0; i < idFormacaoAPM.length; i++) {
+    let servidoresAPM: any[] = [];
+    // Montar cada cargo da APM
+    // // Diretor Financeiro
+    const diretorFinanceiro = {
+      servidorId: idAssociadoAPM[i],
+      formacaoAPMId: idFormacaoAPM[i],
+      cargoAPM: CargoAPMEnum.DIRETOR_FINANCEIRO,
+    };
+    servidoresAPM.push(diretorFinanceiro);
+
+    // Conselheiro Fiscal
+    const conselheiroA = {
+      servidorId: idAssociadoAPM[i + 3],
+      formacaoAPMId: idFormacaoAPM[i],
+      cargoAPM: CargoAPMEnum.CONSELHEIRO_FISCAL,
+    };
+    servidoresAPM.push(conselheiroA);
+
+    // Conselheiro Fiscal
+    const conselheiroB = {
+      servidorId: idAssociadoAPM[i + 6],
+      formacaoAPMId: idFormacaoAPM[i],
+      cargoAPM: CargoAPMEnum.CONSELHEIRO_FISCAL,
+    };
+    servidoresAPM.push(conselheiroB);
+
+    // Conselheiro Fiscal
+    const conselheiroC = {
+      servidorId: idAssociadoAPM[i + 9],
+      formacaoAPMId: idFormacaoAPM[i],
+      cargoAPM: CargoAPMEnum.CONSELHEIRO_FISCAL,
+    };
+    servidoresAPM.push(conselheiroC);
+
+    // Criação dos ServidorAPM
+    const servidorAPM = await prisma.servidorAPM.createMany({
+      data: servidoresAPM,
+    });
+  }
+  console.log('\t\t✔  Seeding de Servidores APM concluído.');
 }
 
 async function seedContaBancaria(idEscola: number[], prisma: PrismaClient) {
@@ -304,7 +419,7 @@ async function seedFornecedor(prisma: PrismaClient) {
   const registrosFornecedor = [
     {
       razaoSocial: 'Felipe e Aparecida Limpeza ME',
-      cnpj: '74326770000165',
+      cnpj: gerarCNPJ(),
       cpf: null,
       cidade: 'Presidente Epitácio',
       endereco: 'Avenida Américo Tornero, 632',
@@ -315,7 +430,7 @@ async function seedFornecedor(prisma: PrismaClient) {
     },
     {
       razaoSocial: 'Marcos e Eloá Marcenaria Ltda',
-      cnpj: '12191727000182',
+      cnpj: gerarCNPJ(),
       cpf: null,
       cidade: 'Presidente Epitácio',
       endereco: 'Jardim Santa Rosa, 862',
@@ -326,7 +441,7 @@ async function seedFornecedor(prisma: PrismaClient) {
     },
     {
       razaoSocial: 'Anderson e Cauã Marcenaria ME',
-      cnpj: '37737808000166',
+      cnpj: gerarCNPJ(),
       cpf: null,
       cidade: 'Presidente Epitácio',
       endereco: 'Jardim Lajeado, 862',
@@ -334,6 +449,39 @@ async function seedFornecedor(prisma: PrismaClient) {
       nomeFantasia: 'AEC Marcenaria',
       telefone: '1136175973',
       email: 'ti@andersonecauamarcenariame.com.br',
+    },
+    {
+      razaoSocial: 'FGgael ME',
+      cnpj: null,
+      cpf: gerarCPF(),
+      cidade: 'Presidente Epitácio',
+      endereco: 'Rua Antônio Félix Pacheco, 1047',
+      responsavel: 'Gael Felipe',
+      nomeFantasia: 'Gael Fernanda Coisas',
+      telefone: '1138695074',
+      email: 'fgael@fgael.com.br',
+    },
+    {
+      razaoSocial: 'Emanuel e Agatha Eletrônica Ltda',
+      cnpj: gerarCNPJ(),
+      cpf: null,
+      cidade: 'Presidente Epitácio',
+      endereco: 'Praça José Félix Lisboa, 688',
+      responsavel: 'Emanuel',
+      nomeFantasia: 'Eletro EMA',
+      telefone: '1138695074',
+      email: 'contato@emanueleagathaeletronicaltda.com.br',
+    },
+    {
+      razaoSocial: 'Vicente e Anthony Telas Ltda',
+      cnpj: gerarCNPJ(),
+      cpf: null,
+      cidade: 'Presidente Epitácio',
+      endereco: 'Rua Miosótis, 1472',
+      responsavel: 'Vicente da Costa',
+      nomeFantasia: 'Vitoria Telas',
+      telefone: '1136175973',
+      email: 'contato@vicenteeanthonytelasltda.com.br',
     },
   ];
 
@@ -352,154 +500,93 @@ async function seedFornecedor(prisma: PrismaClient) {
 }
 
 async function seedPesquisaPreco(idPrestacaoContas: number[], idFornecedor: number[], prisma: PrismaClient) {
-  let pesquisaPreco: any[] = [];
+  let listaPesquisaPreco: any[] = [];
 
-  const registrosPesquisaPreco = [
-    {
-      prestacaoContasId: idPrestacaoContas[0],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço A',
-      proponenteA: idFornecedor[1],
-      proponenteB: idFornecedor[2],
-      proponenteC: idFornecedor[0],
-      programaId: 1,
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[0],
-      tipo: 'B',
-      titulo: 'Segunda Pesquisa de Preço A',
-      proponenteA: idFornecedor[2],
-      proponenteB: idFornecedor[0],
-      proponenteC: idFornecedor[1],
-      programaId: 2,
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[0],
-      tipo: 'B',
-      titulo: 'Terceira Pesquisa de Preço A',
-      proponenteA: null,
-      proponenteB: null,
-      proponenteC: null,
-      programaId: 3,
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[1],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço B',
-      proponenteA: idFornecedor[2],
-      proponenteB: idFornecedor[0],
-      proponenteC: idFornecedor[1],
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[2],
-      tipo: 'B',
-      titulo: 'Segunda Pesquisa de Preço B',
-      proponenteA: idFornecedor[0],
-      proponenteB: idFornecedor[1],
-      proponenteC: idFornecedor[2],
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[2],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço C',
-      proponenteA: idFornecedor[0],
-      proponenteB: idFornecedor[1],
-      proponenteC: idFornecedor[2],
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[3],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço D',
-      proponenteA: idFornecedor[1],
-      proponenteB: idFornecedor[0],
-      proponenteC: idFornecedor[2],
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[4],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço E',
-      proponenteA: idFornecedor[2],
-      proponenteB: idFornecedor[1],
-      proponenteC: idFornecedor[0],
-    },
-    {
-      prestacaoContasId: idPrestacaoContas[5],
-      tipo: 'B',
-      titulo: 'Pesquisa de Preço F',
-      proponenteA: idFornecedor[0],
-      proponenteB: idFornecedor[2],
-      proponenteC: idFornecedor[1],
-    },
-  ];
-
-  for (const registro of registrosPesquisaPreco) {
-    const resposta = await prisma.pesquisaPreco.create({
-      data: {
-        ...registro,
-        createdAt: new Date(),
-      },
-    });
-    pesquisaPreco.push(resposta);
-  }
-
-  console.log('\t\t✔  Seeding de Pesquisas de Preço concluído.');
-  return pesquisaPreco;
-}
-
-function gerarBens(quantidadeBens: number) {
-  const adjetivos = ['Excelente', 'Básico', 'Avançado', 'Simple', 'Completo', 'Rápido', 'Eficiente'];
-  const substantivos = ['Equipamento', 'Material', 'Kit', 'Sistema', 'Dispositivo', 'Aparelho', 'Componente'];
-
-  const bens: any[] = [];
-
-  for (let i = 0; i < quantidadeBens; i++) {
-    const adjetivo = adjetivos[Math.floor(Math.random() * adjetivos.length)];
-    const substantivo = substantivos[Math.floor(Math.random() * substantivos.length)];
-    const descricao = `${adjetivo} ${substantivo}`;
-    const quantidade = Math.floor(Math.random() * 30) + 1;
-
-    bens.push({ descricao, quantidade });
-  }
-
-  return bens;
-}
-
-async function seedBem(pesquisaPreco: any[], prisma: PrismaClient) {
-  let listaBens: any[] = [];
-
-  for (const pesquisa of pesquisaPreco) {
-    const numBens = Math.floor(Math.random() * 4) + 2;
-    const bens = gerarBens(numBens);
-
-    for (const bem of bens) {
-      const resposta = await prisma.bem.create({
+  for (let i = 0; i < idPrestacaoContas.length; i++) {
+    for (let j = 0; j < 3; j++) {
+      const proponente = obterElementosAleatoriosDistintos(idFornecedor, 3);
+      const pesquisaPreco = await prisma.pesquisaPreco.create({
         data: {
-          pesquisaPrecoId: pesquisa.id,
-          descricao: bem.descricao,
-          quantidade: bem.quantidade,
+          prestacaoContasId: idPrestacaoContas[i],
+          tipo: 'B',
+          titulo: `Prestação ${i + 1}: Pesquisa de Preço ${j + 1}`,
+          proponenteA: proponente[0],
+          proponenteB: proponente[1],
+          proponenteC: proponente[2],
           createdAt: new Date(),
         },
       });
-      listaBens.push(resposta);
+      listaPesquisaPreco.push(pesquisaPreco);
     }
   }
-
-  console.log('\t\t✔  Seeding de Bens concluído.');
-  return listaBens;
+  console.log('\t\t✔  Seeding de Pesquisas de Preço concluído.');
+  return listaPesquisaPreco;
 }
 
-async function seedPropostaBem(pesquisaPreco: any[], bem: any[], prisma: PrismaClient) {
-  // Para cada pesquisa de preço, irá incluir no máximo, como propostasBem, a quantidade de proponentes da pesquisaPreço
+function gerarItens(quantidadeItens: number) {
+  const adjetivos = ['Excelente', 'Básico', 'Avançado', 'Simple', 'Completo', 'Rápido', 'Eficiente'];
+  const substantivos = [
+    'Equipamento',
+    'Material',
+    'Kit',
+    'Sistema',
+    'Dispositivo',
+    'Aparelho',
+    'Componente',
+    'Serviço',
+    'Mão de Obra',
+  ];
+  const unidades = ['m', 'un.', 'kg', 'L', 'm²', 'm³', 'h'];
+
+  const itens: any[] = [];
+  for (let i = 0; i < quantidadeItens; i++) {
+    const adjetivo = adjetivos[Math.floor(Math.random() * adjetivos.length)];
+    const substantivo = substantivos[Math.floor(Math.random() * substantivos.length)];
+    const unidade = unidades[Math.floor(Math.random() * unidades.length)];
+    const descricao = `${adjetivo} ${substantivo}`;
+    const quantidade = Math.floor(Math.random() * 30) + 1;
+
+    itens.push({ descricao, quantidade, unidade });
+  }
+  return itens;
+}
+
+async function seedItens(pesquisaPreco: any[], prisma: PrismaClient) {
+  let listaItens: any[] = [];
+
+  for (const pesquisa of pesquisaPreco) {
+    const numItens = Math.floor(Math.random() * 4) + 2;
+    const itens = gerarItens(numItens);
+
+    for (const item of itens) {
+      const resposta = await prisma.item.create({
+        data: {
+          pesquisaPrecoId: pesquisa.id,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
+          unidade: item.unidade,
+          createdAt: new Date(),
+        },
+      });
+      listaItens.push(resposta);
+    }
+  }
+  console.log('\t\t✔  Seeding de Itens concluído.');
+  return listaItens;
+}
+
+async function seedPropostaItem(pesquisaPreco: any[], item: any[], prisma: PrismaClient) {
+  // Para cada pesquisa de preço, irá incluir no máximo, como propostasItem, a quantidade de proponentes da pesquisaPreço
   for (const pesquisa of pesquisaPreco) {
     const fornecedores = [pesquisa.proponenteA, pesquisa.proponenteB, pesquisa.proponenteC].filter(
       (fornecedor) => fornecedor !== null,
     ); // Filtrar nulos
 
-    // Filtrar os bens que pertencem à pesquisa atual
-    const bens = bem.filter((b) => b.pesquisaPrecoId === pesquisa.id);
+    // Filtrar os itens que pertencem à pesquisa atual
+    const itens = item.filter((b) => b.pesquisaPrecoId === pesquisa.id);
 
-    // Para cada bem, irá incluir no máximo, como propostasBem, a quantidade de fornecedores da pesquisaPreço
-    for (const bem of bens) {
+    // Para cada item, irá incluir no máximo, como propostasItem, a quantidade de fornecedores da pesquisaPreço
+    for (const item of itens) {
       const numPropostas = Math.min(fornecedores.length, Math.floor(Math.random() * 3) + 1);
 
       for (let i = 0; i < numPropostas; i++) {
@@ -508,9 +595,9 @@ async function seedPropostaBem(pesquisaPreco: any[], bem: any[], prisma: PrismaC
         // Gerar um valor aleatório entre 10 e 1000
         const valor = (Math.random() * (1000 - 10) + 10).toFixed(2); // Valor arredondado para 2 casas decimais
 
-        const resposta = await prisma.propostaBem.create({
+        const resposta = await prisma.propostaItem.create({
           data: {
-            bemId: bem.id, // Associar o bem ao qual a proposta pertence
+            itemId: item.id, // Associar o item ao qual a proposta pertence
             fornecedorId: fornecedorId, // Associar o fornecedor que fez a proposta
             valor: parseFloat(valor), // Valor da proposta
             createdAt: new Date(),
@@ -519,7 +606,7 @@ async function seedPropostaBem(pesquisaPreco: any[], bem: any[], prisma: PrismaC
       }
     }
   }
-  console.log('\t\t✔  Seeding de Propostas de Bens concluído.');
+  console.log('\t\t✔  Seeding de Propostas de Itens concluído.');
 }
 
 // Salva um documentoScan, atribui na tabela de orçamento e salva na proposta correta
@@ -568,7 +655,26 @@ async function seedOrcamento(prisma: PrismaClient) {
   console.log('\t\t✔  Seeding de Orçamentos concluído.');
 }
 
-// Salva um documentoScan, atribui na tabela de nota fiscal e adiciona a um BEM
+async function seedAta(prisma: PrismaClient, idEscolas: number[]) {
+  const tde = TipoDocumentoEnum.ATA_ASSINADA;
+  for (const escolaId of idEscolas) {
+    for (let i = 0; i < 4; i++) {
+      await prisma.ata.create({
+        data: {
+          escolaId: escolaId,
+          titulo: `Ata da 00${i + 1} da Escola ${escolaId}`,
+          documentosScanId: (await createAndSaveDocumento(prisma, tde)).id,
+          ata: 'Conteúdo de exemplo para a ata associada ao arquivo-seed.pdf',
+          data: gerarDataAleatoria(),
+          createdAt: new Date(),
+        },
+      });
+    }
+  }
+  console.log('\t\t✔   Seeding de Atas concluído.');
+}
+
+// Salva um documentoScan, atribui na tabela de nota fiscal e adiciona a um ITEM
 async function seedNotaFiscal(idFornecedor: number[], prisma: PrismaClient) {
   console.log('\t\t✔  Seeding de Notas Fiscais concluído.');
 }

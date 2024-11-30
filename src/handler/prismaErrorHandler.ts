@@ -16,21 +16,33 @@ export class ErrorHandler {
     console.error(error);
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        // // Entrada não encontrada, com os parâmetros informados
+        return {
+          ok: false,
+          data: StatusCodes.CONFLICT,
+          error: {
+            code: error.code,
+            meta: error.meta,
+          },
+        };
+      } else {
+        return {
+          ok: false,
+          data: StatusCodes.INTERNAL_SERVER_ERROR,
+          error: {
+            code: error.code,
+            meta: error.meta,
+          },
+        };
+      }
+    } else {
+      // Para outros tipos de erro
       return {
         ok: false,
         data: StatusCodes.INTERNAL_SERVER_ERROR,
-        error: {
-          code: error.code,
-          meta: error.meta,
-        },
+        error: { message: 'Erro desconhecido' },
       };
     }
-
-    // Para outros tipos de erro
-    return {
-      ok: false,
-      data: StatusCodes.INTERNAL_SERVER_ERROR,
-      error: { message: 'Erro desconhecido' },
-    };
   }
 }

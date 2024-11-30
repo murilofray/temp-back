@@ -136,3 +136,46 @@ export const getServidoresByNivelAcessosService = async (niveis: string[]) => {
     },
   });
 };
+
+export const updateServidorComNiveisAcessoService = async (id: number, data: any, niveis: number[]) => {
+  // Atualiza os dados do servidor
+  const servidorAtualizado = await prisma.servidor.update({
+    where: { id },
+    data: {
+      nome: data.nome,
+      rg: data.rg,
+      cpf: data.cpf,
+      dataContratacao: data.dataContratacao,
+      categoria: data.categoria,
+      grau: data.grau,
+      pontuacaoAnual: data.pontuacaoAnual,
+      pontuacaoAssiduidade: data.pontuacaoAssiduidade,
+      anoDaUltimaProgressaoPorAssiduidade: data.anoDaUltimaProgressaoPorAssiduidade,
+      anoDaUltimaProgressaoPorTitulo: data.anoDaUltimaProgressaoPorTitulo,
+      anoDoUltimoQuinquenio: data.anoDoUltimoQuinquenio,
+      aptoParaProgressaoPorAssiduidade: data.aptoParaProgressaoPorAssiduidade,
+      aptoParaProgressaoPorTitulo: data.aptoParaProgressaoPorTitulo,
+      email: data.email,
+      senha: data.senha,
+      updatedAt: new Date(),
+      escolaId: data.escolaId
+    },
+  });
+
+  // Apaga os registros antigos na tabela NivelAcessoServidor
+  await prisma.nivelAcessoServidor.deleteMany({
+    where: { servidorId: id },
+  });
+
+  // Insere os novos níveis de acesso
+  const niveisAcessoData = niveis.map(nivelAcessoId => ({
+    servidorId: id,
+    nivelAcessoId,
+  }));
+
+  await prisma.nivelAcessoServidor.createMany({
+    data: niveisAcessoData,
+  });
+
+  return servidorAtualizado;
+};

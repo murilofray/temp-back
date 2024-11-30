@@ -80,7 +80,6 @@ export default class DocumentoController {
     try {
       const { id } = req.params; // ID do documento a ser atualizado
       const pdf = req.file; // Arquivo enviado no upload
-      const { tipoDocumentoId, descricao } = req.body; // Dados enviados no corpo da requisição
   
       // Verifica se o ID foi fornecido
       if (!id) {
@@ -95,8 +94,6 @@ export default class DocumentoController {
   
       // Prepara os dados para atualização
       const documentoAtualizado = {
-        tipoDocumentoId: tipoDocumentoId ? +tipoDocumentoId : undefined,
-        descricao: descricao || undefined,
         caminho: pdf ? `atas/${pdf.filename}` : undefined, // Atualiza o caminho se o arquivo for enviado
       };
   

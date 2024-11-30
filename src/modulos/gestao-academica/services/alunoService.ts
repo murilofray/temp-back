@@ -57,7 +57,7 @@ export class AlunoService {
             Servidor: {
               id: servidorId,
             },
-            ano: new Date().getFullYear().toString(),
+            anoLetivo: new Date().getFullYear(),
           },
         },
         include: {
@@ -178,6 +178,9 @@ export class AlunoService {
     try {
       const aluno = await prisma.aluno.findUnique({
         where: { id },
+        include: {
+          Turma: true,
+        },
       });
 
       if (!aluno) {

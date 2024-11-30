@@ -26,6 +26,7 @@
     "body-parser": "^1.20.3",
     "busca-cep": "^0.5.0",
     "cors": "^2.8.5",
+    "cpf_and_cnpj-generator": "^1.1.5",
     "dotenv": "^16.4.5",
     "express": "^4.20.0",
     "http-status-codes": "^2.3.0",

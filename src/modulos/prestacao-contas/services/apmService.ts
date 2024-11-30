@@ -4,15 +4,15 @@ import { ErrorHandler } from '../../../handler/prismaErrorHandler';
 export class ApmService {
   async create(apm: { vigente: number; dataFormacao: Date }) {
     try {
-      const createApm = await prisma.aPM.create({
-        data: {
-          vigente: apm.vigente,
-          dataFormacao: apm.dataFormacao,
-          createdAt: new Date(),
-        },
-      });
-
-      return { ok: true, data: createApm };
+      // const createApm = await prisma.aPM.create({
+      //   data: {
+      //     nome: apm.nome,
+      //     cnpj: apm.cnpj,
+      //     dataFormacao: apm.dataFormacao,
+      //     createdAt: new Date(),
+      //   },
+      // });
+      // return { ok: true, data: createApm };
     } catch (error) {
       console.error('Erro ao criar APM:', error);
       return ErrorHandler.handleError(error);
@@ -40,7 +40,7 @@ export class ApmService {
       const apms = await prisma.aPM.findMany({
         where: {
           Escola: {
-            some: { id: idEscola },
+            id: idEscola,
           },
           deletedAt: null,
         },
@@ -59,7 +59,6 @@ export class ApmService {
       const updatedApm = await prisma.aPM.update({
         where: { id },
         data: {
-          vigente: apm.vigente,
           dataFormacao: apm.dataFormacao,
           updatedAt: new Date(),
         },
@@ -87,4 +86,43 @@ export class ApmService {
       return ErrorHandler.handleError(error);
     }
   }
+
+  async getApmDetailsByEscola(idEscola: number) {
+    try {
+      const apmDetails = await prisma.aPM.findFirst({
+        where: {
+          Escola: {
+            id: idEscola,
+          },
+          deletedAt: null,
+        },
+        include: {
+          FormacaoAPM: {
+            where: {
+              vigencia: true, // Apenas a formação atual
+            },
+            include: {
+              ServidorApm: {
+                include: {
+                  Servidor: true, // Inclui todos os dados de Servidor
+                },
+              },
+            },
+          },
+        },
+      });
+  
+      if (!apmDetails) {
+        return { ok: false, message: 'APM não encontrada para a escola especificada.' };
+      }
+  
+      return { ok: true, data: apmDetails };
+    } catch (error) {
+      console.error('Erro ao buscar detalhes da APM:', error);
+      return { ok: false, error: 'Erro ao buscar detalhes da APM.' };
+    }
+  }
+  
+  
+  
 }

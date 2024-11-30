@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { BemService } from '../services/bemService';
+import { ItemService } from '../services/itemService';
 
-const bemService = new BemService();
+const itemService = new ItemService();
 
-export class BemController {
+export class ItemController {
   async create(req: Request, res: Response) {
-    const resposta = await bemService.create(req.body);
+    const resposta = await itemService.create(req.body);
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {
@@ -15,7 +15,7 @@ export class BemController {
   }
 
   async update(req: Request, res: Response) {
-    const resposta = await bemService.update(req.body, Number(req.params.id));
+    const resposta = await itemService.update(req.body, Number(req.params.id));
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {
@@ -24,7 +24,7 @@ export class BemController {
   }
 
   async delete(req: Request, res: Response) {
-    const resposta = await bemService.delete(Number(req.params.id));
+    const resposta = await itemService.delete(Number(req.params.id));
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {
@@ -33,7 +33,7 @@ export class BemController {
   }
 
   async getById(req: Request, res: Response) {
-    const resposta = await bemService.findById(Number(req.params.id));
+    const resposta = await itemService.findById(Number(req.params.id));
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {
@@ -42,7 +42,7 @@ export class BemController {
   }
 
   async getByPesquisa(req: Request, res: Response) {
-    const resposta = await bemService.findByPesquisa(Number(req.params.id));
+    const resposta = await itemService.findByPesquisa(Number(req.params.id));
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta);
     } else {
@@ -51,7 +51,7 @@ export class BemController {
   }
 
   async createProposta(req: Request, res: Response) {
-    const resposta = await bemService.createProposta(req.body);
+    const resposta = await itemService.createProposta(req.body);
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {
@@ -60,9 +60,9 @@ export class BemController {
   }
 
   async updateProposta(req: Request, res: Response) {
-    const resposta = await bemService.updateProposta(
+    const resposta = await itemService.updateProposta(
       req.body,
-      Number(req.params.idBem),
+      Number(req.params.idItem),
       Number(req.params.idFornecedor),
     );
     if (resposta?.ok) {
@@ -73,7 +73,7 @@ export class BemController {
   }
 
   async deleteProposta(req: Request, res: Response) {
-    const resposta = await bemService.deleteProposta(Number(req.params.idBem), Number(req.params.idFornecedor));
+    const resposta = await itemService.deleteProposta(Number(req.params.idItem), Number(req.params.idFornecedor));
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {

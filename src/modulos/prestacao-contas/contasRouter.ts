@@ -1,6 +1,6 @@
 import express from 'express';
 import apmRouter from './routes/apmRouter';
-import bemRouter from './routes/bemRouter';
+import itemRouter from './routes/itemRouter';
 import fornecedorRouter from './routes/fornecedorRouter';
 import pesquisaPrecoRouter from './routes/pesquisaPrecoRouter';
 import contaBancariaRouter from './routes/contaBancariaRouter';
@@ -9,7 +9,6 @@ import pddeRouter from './routes/pddeRouter';
 import saldoPddeRouter from './routes/saldoPddeRouter';
 import programaRouter from './routes/programaRouter';
 import prestacaoContasRouter from './routes/prestacaoContasRouter';
-import servicoRouter from './routes/servicoRouter';
 import movimentacaoFinanceiraRouter from './routes/movimentacaoFinanceiraRouter';
 import ataRouter from './routes/ataRouter';
 import oficioMemorandoRouter from './routes/oficioMemorandoRouter';
@@ -30,8 +29,7 @@ router.use('/movimentacao', movimentacaoFinanceiraRouter);
 router.use('/prestacao', prestacaoContasRouter);
 router.use('/pesquisa', pesquisaPrecoRouter);
 router.use('/programa', programaRouter);
-router.use('/bem', bemRouter);
-router.use('/servico', servicoRouter);
+router.use('/item', itemRouter);
 router.use('/fornecedor', fornecedorRouter);
 router.use('/ata', ataRouter);
 

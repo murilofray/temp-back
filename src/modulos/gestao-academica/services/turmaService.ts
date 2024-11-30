@@ -71,6 +71,10 @@ export class TurmaService {
     const turmaUpdated = await prisma.turma.update({
       where: { id },
       data: turmaData,
+      include: {
+        Servidor: true,
+        Escola: true
+      }
     });
 
     return { ok: true, data: turmaUpdated };
@@ -92,5 +96,36 @@ export class TurmaService {
 
     await prisma.turma.delete({ where: { id } });
     return { ok: true, data: { message: 'Turma excluída com sucesso.' } };
+  }
+
+  async rematricular(idAtual: number, idNovo: number){
+    const turmaAtualExist = await prisma.turma.findFirst({
+      where: {
+        id: idAtual
+      }
+    })
+
+    if(!turmaAtualExist)
+      return { ok: false, data: 404 };
+
+    const turmaNovaExist = await prisma.turma.findFirst({
+      where: {
+        id: idNovo
+      }
+    })
+
+    if(!turmaNovaExist)
+      return { ok: false, data: 404 };
+
+    await prisma.aluno.updateMany({
+      where: {
+        turmaId: idAtual
+      },
+      data: {
+        turmaId: idNovo
+      }
+    })
+    
+    return { ok: true, data: { message: 'Rematrícula realizada com sucesso.' } };
   }
 }

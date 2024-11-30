@@ -10,6 +10,7 @@ const apmController = new ApmController();
 router.post('/', authentication.authenticate, apmController.create);
 router.get('/', authentication.authenticate, apmController.getAll);
 router.get('/escola/:idEscola', authentication.authenticate, apmController.getByEscola);
+router.get('/details/:idEscola', apmController.getApmDetails);
 router.put('/:id', authentication.authenticate, apmController.update);
 router.delete('/:id', authentication.authenticate, apmController.delete);
 

@@ -58,7 +58,11 @@ export class FornecedorController {
   }
 
   async getById(req: Request, res: Response) {
-    const resposta = await fornecedorService.findById(Number(req.params.id));
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(StatusCodes.BAD_REQUEST).send({ message: 'ID inválido' });
+    }
+    const resposta = await fornecedorService.findById(id);
     if (resposta?.ok) {
       return res.status(StatusCodes.OK).send(resposta.data);
     } else {

@@ -7,8 +7,7 @@ const authentication = new AuthenticationService();
 const pddeController = new PddeController();
 
 router.post(`/`, authentication.authenticate, pddeController.cadastrarPDDE);
-router.get(`/saldo`, authentication.authenticate, pddeController.listarPDDEComSaldo);
-router.get(`/listarPorEscola/:escolaId`, authentication.authenticate, pddeController.listarPDDEComSaldoPorEscola)
+router.get(`/:idEscola`, authentication.authenticate, pddeController.getByEscola)
 
 router.get(`/`, authentication.authenticate, pddeController.listarTodosPDDEs);
 router.get('/:id', authentication.authenticate, pddeController.getById);

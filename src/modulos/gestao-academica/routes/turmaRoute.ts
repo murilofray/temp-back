@@ -14,4 +14,6 @@ router.post('/', turmaController.create);
 router.put('/:id', turmaController.update);
 router.delete('/:id', turmaController.delete);
 
+router.post('/rematricula', turmaController.rematricular)
+
 export default router;

@@ -1,15 +1,15 @@
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '../../../../prisma/client';
 import { ErrorHandler } from '../../../handler/prismaErrorHandler';
-import { PropostaBem, PropostaServico } from '@prisma/client';
+import { PropostaItem } from '@prisma/client';
 
 export class PropostasService {
-  async existPropostaServico(idServico: number, idFornecedor: number) {
+  async existPropostaItem(idItem: number, idFornecedor: number) {
     try {
-      const resposta = await prisma.propostaServico.findUnique({
+      const resposta = await prisma.propostaItem.findUnique({
         where: {
-          servicoId_fornecedorId: {
-            servicoId: idServico,
+          itemId_fornecedorId: {
+            itemId: idItem,
             fornecedorId: idFornecedor,
           },
         },
@@ -21,28 +21,11 @@ export class PropostasService {
     }
   }
 
-  async existPropostaBem(idBem: number, idFornecedor: number) {
+  async createItemProposta(propostaItem: PropostaItem) {
     try {
-      const resposta = await prisma.propostaBem.findUnique({
-        where: {
-          bemId_fornecedorId: {
-            bemId: idBem,
-            fornecedorId: idFornecedor,
-          },
-        },
-      });
-      if (!resposta) return { ok: false, data: StatusCodes.NOT_FOUND };
-      else return { ok: false, data: resposta };
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
-  async createServicoProposta(propostaServico: PropostaServico) {
-    try {
-      const resposta = await prisma.propostaServico.create({
+      const resposta = await prisma.propostaItem.create({
         data: {
-          ...propostaServico,
+          ...propostaItem,
           createdAt: new Date(),
         },
       });
@@ -52,106 +35,49 @@ export class PropostasService {
     }
   }
 
-  async createBemProposta(propostaBem: PropostaBem) {
+  async updateItemProposta(propostaItem: PropostaItem, idItem: number, idFornecedor: number) {
     try {
-      const resposta = await prisma.propostaBem.create({
-        data: {
-          ...propostaBem,
-          createdAt: new Date(),
-        },
-      });
-      return { ok: true, data: resposta };
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
-  async updateServicoProposta(propostaServico: PropostaServico, idServico: number, idFornecedor: number) {
-    try {
-      const propostaServicoExiste = await this.existPropostaServico(idServico, idFornecedor);
-      if (!propostaServicoExiste.ok) {
+      const propostaItemExiste = await this.existPropostaItem(idItem, idFornecedor);
+      if (!propostaItemExiste.ok) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
       } else {
-        const updatePropostaServico = await prisma.propostaServico.update({
+        const updatePropostaItem = await prisma.propostaItem.update({
           where: {
-            servicoId_fornecedorId: {
-              servicoId: idServico,
+            itemId_fornecedorId: {
+              itemId: idItem,
               fornecedorId: idFornecedor,
             },
           },
           data: {
-            valor: propostaServico.valor,
+            valor: propostaItem.valor,
             updatedAt: new Date(),
           },
         });
-        return { ok: true, data: updatePropostaServico };
+        return { ok: true, data: updatePropostaItem };
       }
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
   }
 
-  async updateBemProposta(propostaBem: PropostaBem, idBem: number, idFornecedor: number) {
+  async deleteItemProposta(idItem: number, idFornecedor: number) {
     try {
-      const propostaBemExiste = await this.existPropostaBem(idBem, idFornecedor);
-      if (!propostaBemExiste.ok) {
+      const propostaItemExiste = await this.existPropostaItem(idItem, idFornecedor);
+      if (!propostaItemExiste.ok) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
       } else {
-        const updatePropostaBem = await prisma.propostaBem.update({
+        const deletePropostaItem = await prisma.propostaItem.update({
           where: {
-            bemId_fornecedorId: {
-              bemId: idBem,
+            itemId_fornecedorId: {
+              itemId: idItem,
               fornecedorId: idFornecedor,
             },
           },
           data: {
-            valor: propostaBem.valor,
-            updatedAt: new Date(),
+            deletedAt: new Date(),
           },
         });
-        return { ok: true, data: updatePropostaBem };
-      }
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
-  async deleteServicoProposta(idServico: number, idFornecedor: number) {
-    try {
-      const propostaServicoExiste = await this.existPropostaServico(idServico, idFornecedor);
-      if (!propostaServicoExiste.ok) {
-        return { ok: false, data: StatusCodes.NOT_FOUND };
-      } else {
-        const deletePropostaServico = await prisma.propostaServico.delete({
-          where: {
-            servicoId_fornecedorId: {
-              servicoId: idServico,
-              fornecedorId: idFornecedor,
-            },
-          },
-        });
-        return { ok: true, data: deletePropostaServico };
-      }
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
-  async deleteBemProposta(idBem: number, idFornecedor: number) {
-    try {
-      const propostaBemExiste = await this.existPropostaBem(idBem, idFornecedor);
-      if (!propostaBemExiste.ok) {
-        return { ok: false, data: StatusCodes.NOT_FOUND };
-      } else {
-        const deletePropostaBem = await prisma.propostaBem.delete({
-          where: {
-            bemId_fornecedorId: {
-              bemId: idBem,
-              fornecedorId: idFornecedor,
-            },
-          },
-        });
-        return { ok: true, data: deletePropostaBem };
+        return { ok: true, data: deletePropostaItem };
       }
     } catch (error) {
       return ErrorHandler.handleError(error);

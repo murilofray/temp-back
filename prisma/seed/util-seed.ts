@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { TipoDocumentoEnum } from '../../src/enum/TipoDocumentoEnum';
+import generator from 'cpf_and_cnpj-generator';
 import * as fs from 'fs';
 
 /**
@@ -107,12 +108,51 @@ export function gerarDataAleatoria(): Date {
   // 2. Obtém a data de hoje
   const hoje = new Date();
   // 3. Gera um valor aleatório entre o início do ano e hoje
-  const intervalo = hoje.getTime() - inicioAno.getTime() ; // Diferença em milissegundos
+  const intervalo = hoje.getTime() - inicioAno.getTime(); // Diferença em milissegundos
   const intervaloEmDias = Math.floor(intervalo / (24 * 60 * 60 * 1000));
   // 4. Gera um número aleatório dentro desse intervalo
   const aleatorio = Math.floor(Math.random() * intervaloEmDias);
   // 5. Cria a data aleatória
-  const dataAleatoria = new Date(inicioAno.getTime() + (aleatorio * (24 * 60 * 60 * 1000)));
+  const dataAleatoria = new Date(inicioAno.getTime() + aleatorio * (24 * 60 * 60 * 1000));
   return dataAleatoria;
 }
 
+export function gerarRG() {
+  const numeros = '0123456789';
+  let rg = '';
+  for (let i = 0; i < 11; i++) {
+    rg += numeros[Math.floor(Math.random() * 10)];
+  }
+  return rg;
+}
+
+export function gerarCPF() {
+  return generator.generateCpf();
+}
+
+export function gerarCNPJ() {
+  return generator.generateCnpj();
+}
+
+/**
+ * Retorna um array com elementos aleatórios distintos de um array original.
+ *
+ * @param {any[]} arr - Array original com elementos a serem selecionados.
+ * @param {number} quantidade - Número de elementos aleatórios a serem retornados.
+ *
+ * @throws {Error} Se o array original tiver menos elementos do que a quantidade solicitada.
+ *
+ * @returns {any[]} Um array com elementos aleatórios distintos do array original.
+ */
+export function obterElementosAleatoriosDistintos(arr: any[], quantidade: number): any[] {
+  if (arr.length < quantidade) {
+    throw new Error(`O array deve ter pelo menos ${quantidade} elementos.`);
+  }
+
+  const elementos: Set<any> = new Set();
+  while (elementos.size < quantidade) {
+    const elementoAleatorio = arr[Math.floor(Math.random() * arr.length)];
+    elementos.add(elementoAleatorio);
+  }
+  return Array.from(elementos);
+}

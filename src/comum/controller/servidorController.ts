@@ -11,7 +11,8 @@ import {
   updateServidorSenhaService,
   getServidoresByNivelAcessoService,
   getServidoresByNivelAcessoAndEscolaService,
-  getServidoresByNivelAcessosService
+  getServidoresByNivelAcessosService,
+  updateServidorComNiveisAcessoService
 } from '../services/servidorService';
 import { Prisma } from '@prisma/client';
 
@@ -177,6 +178,33 @@ export const getServidoresByNivelAcesso = async (req: Request, res: Response) =>
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao obter os servidores por nível de acesso' });
+  }
+};
+
+export const updateServidorNiveisAcesso = async (req: Request, res: Response) => {
+  try {
+    const { niveisAcesso, ...dadosServidor } = req.body;
+    const servidorId = Number(req.params.id);
+
+    if (!niveisAcesso || !Array.isArray(niveisAcesso)) {
+      return res.status(400).json({ error: 'Níveis de acesso devem ser fornecidos como um array' });
+    }
+
+    // Atualiza o servidor e seus níveis de acesso
+    const servidorAtualizado = await updateServidorComNiveisAcessoService(servidorId, dadosServidor, niveisAcesso);
+
+    res.status(200).json(servidorAtualizado);
+  } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = error.meta?.target || 'campo único';
+        return res.status(409).json({ error: `O valor fornecido para '${target}' já está em uso.` });
+      }
+
+      console.error(error);
+      res.status(500).json({ error: 'Erro ao atualizar o servidor e seus níveis de acesso' });
   }
 };
 

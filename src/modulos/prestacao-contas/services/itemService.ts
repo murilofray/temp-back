@@ -1,4 +1,4 @@
-import { Servico, PropostaServico } from '@prisma/client';
+import { Item, PropostaItem } from '@prisma/client';
 import { prisma } from '../../../../prisma/client';
 import { StatusCodes } from 'http-status-codes';
 import { PesquisaPrecoService } from './pesquisaPrecoService';
@@ -8,48 +8,52 @@ import { PropostasService } from './propostaService';
 const pesquisaPrecoService = new PesquisaPrecoService();
 const propostasService = new PropostasService();
 
-export class ServicoService {
-  async create(servico: Servico) {
+export class ItemService {
+  async create(item: Item) {
     try {
       // Verificar se existe um Pesquisa de Preço ativo
-      const pesquisaPrecoExiste = await pesquisaPrecoService.findById(Number(servico.pesquisaPrecoId));
+      const pesquisaPrecoExiste = await pesquisaPrecoService.findById(Number(item.pesquisaPrecoId));
       if (!pesquisaPrecoExiste.ok) {
         return { ok: false, data: StatusCodes.NOT_ACCEPTABLE };
       } else {
-        const resposta = await prisma.servico.create({
+        const createItem = await prisma.item.create({
           data: {
-            ...servico,
+            ...item,
             createdAt: new Date(),
           },
         });
-        return { ok: true, data: resposta };
+
+        return { ok: true, data: createItem };
       }
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
   }
 
-  async update(servico: Servico, id: number) {
+  async update(item: Item, id: number) {
     try {
-      const servicoExiste = await this.findById(id);
-      if (!servicoExiste.ok) {
+      const existeItem = await this.findById(id);
+      if (!existeItem.ok) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
       } else {
-        const updateServico = await prisma.servico.update({
+        const updateItem = await prisma.item.update({
           where: {
             id: +id,
           },
           data: {
-            notaFiscalId: servico.notaFiscalId,
-            descricao: servico.descricao,
-            menorValor: servico.menorValor,
-            justificativa: servico.justificativa,
-            aprovado: servico.aprovado,
-            melhorProponente: servico.melhorProponente,
+            notaFiscalId: item.notaFiscalId,
+            termoDoacaoId: item.termoDoacaoId,
+            descricao: item.descricao,
+            menorValor: item.menorValor,
+            quantidade: item.quantidade,
+            unidade: item.unidade,
+            justificativa: item.justificativa,
+            aprovado: item.aprovado,
+            melhorProponente: item.melhorProponente,
             updatedAt: new Date(),
           },
         });
-        return { ok: true, data: updateServico };
+        return { ok: true, data: updateItem };
       }
     } catch (error) {
       return ErrorHandler.handleError(error);
@@ -58,20 +62,19 @@ export class ServicoService {
 
   async delete(id: number) {
     try {
-      const servicoExiste = await this.findById(id);
-      if (!servicoExiste.ok) {
+      const existeItem = await this.findById(id);
+      if (!existeItem.ok) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
-      } else {
-        const deleteServico = await prisma.servico.update({
-          where: {
-            id: +id,
-          },
-          data: {
-            deletedAt: new Date(),
-          },
-        });
-        return { ok: true, data: deleteServico };
       }
+      const deleteItem = await prisma.item.update({
+        where: {
+          id: +id,
+        },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+      return { ok: true, data: deleteItem };
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
@@ -79,12 +82,20 @@ export class ServicoService {
 
   async findById(id: number) {
     try {
-      const servico = await prisma.servico.findFirst({
+      const item = await prisma.item.findFirst({
         where: {
           id: id,
           deletedAt: null,
         },
         include: {
+          PropostaItem: {
+            where: {
+              deletedAt: null,
+            },
+            include: {
+              Fornecedor: true,
+            },
+          },
           PesquisaPreco: {
             include: {
               DocumentoScanA: true,
@@ -92,17 +103,12 @@ export class ServicoService {
               DocumentoScanC: true,
             },
           },
-          PropostaServico: {
-            include: {
-              Fornecedor: true,
-            },
-          },
         },
       });
-      if (!servico) {
+      if (!item) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
       }
-      return { ok: true, data: servico };
+      return { ok: true, data: item };
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
@@ -110,7 +116,7 @@ export class ServicoService {
 
   async findByPesquisa(idPesquisa: number) {
     try {
-      const servicos = await prisma.servico.findMany({
+      const bens = await prisma.item.findMany({
         where: {
           pesquisaPrecoId: idPesquisa,
           deletedAt: null,
@@ -123,28 +129,31 @@ export class ServicoService {
               DocumentoScanC: true,
             },
           },
-          PropostaServico: {
+          PropostaItem: {
+            where: {
+              deletedAt: null,
+            },
             include: {
               Fornecedor: true,
             },
           },
         },
       });
-      return { ok: true, data: servicos };
+      return { ok: true, data: bens };
     } catch (error) {
       return ErrorHandler.handleError(error);
     }
   }
 
-  async createProposta(propostaServico: PropostaServico) {
-    return await propostasService.createServicoProposta(propostaServico);
+  async createProposta(propostaItem: PropostaItem) {
+    return await propostasService.createItemProposta(propostaItem);
   }
 
-  async updateProposta(propostaServico: PropostaServico, idServico: number, idFornecedor: number) {
-    return await propostasService.updateServicoProposta(propostaServico, idServico, idFornecedor);
+  async updateProposta(propostaItem: PropostaItem, idItem: number, idFornecedor: number) {
+    return await propostasService.updateItemProposta(propostaItem, idItem, idFornecedor);
   }
 
-  async deleteProposta(idServico: number, idFornecedor: number) {
-    return await propostasService.deleteServicoProposta(idServico, idFornecedor);
+  async deleteProposta(idItem: number, idFornecedor: number) {
+    return await propostasService.deleteItemProposta(idItem, idFornecedor);
   }
 }

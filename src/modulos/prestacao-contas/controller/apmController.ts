@@ -7,20 +7,20 @@ const apmService = new ApmService();
 export class ApmController {
   async create(req: Request, res: Response) {
     try {
-      const { vigente, dataFormacao } = req.body;
+      // const { vigente, dataFormacao } = req.body;
 
-      if (!vigente || !dataFormacao) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          error: 'Todos os campos obrigatórios devem ser preenchidos.',
-        });
-      }
+      // if (!vigente || !dataFormacao) {
+      //   return res.status(StatusCodes.BAD_REQUEST).json({
+      //     error: 'Todos os campos obrigatórios devem ser preenchidos.',
+      //   });
+      // }
 
-      const novaApm = await apmService.create({
-        vigente: parseInt(vigente),
-        dataFormacao: new Date(dataFormacao),
-      });
+      // const novaApm = await apmService.create({
+      //   vigente: parseInt(vigente),
+      //   dataFormacao: new Date(dataFormacao),
+      // });
 
-      return res.status(StatusCodes.CREATED).json(novaApm.data);
+      // return res.status(StatusCodes.CREATED).json(novaApm.data);
     } catch (error) {
       console.error('Erro ao criar APM:', error);
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -111,4 +111,32 @@ export class ApmController {
       });
     }
   }
+
+  async getApmDetails(req: Request, res: Response) {
+    try {
+      const idEscola = Number(req.params.idEscola);
+  
+      if (!idEscola) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          error: 'O ID da escola é obrigatório.',
+        });
+      }
+  
+      const resposta = await apmService.getApmDetailsByEscola(idEscola);
+  
+      if (resposta.ok) {
+        return res.status(StatusCodes.OK).json(resposta.data);
+      } else {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          error: resposta.message || 'APM não encontrada.',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes da APM:', error);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        error: 'Erro ao buscar detalhes da APM.',
+      });
+    }
+  }
+  
 }

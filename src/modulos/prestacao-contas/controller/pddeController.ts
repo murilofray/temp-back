@@ -69,6 +69,8 @@ export class PddeController {
           deletedAt: null, // Listar apenas registros que não foram excluídos
         },
         include: {
+          ContaBancaria: true,
+          SaldoPDDE: true,
           Escola: true,
         },
       });
@@ -80,46 +82,11 @@ export class PddeController {
     }
   }
 
-  async listarPDDEComSaldo(req: Request, res: Response) {
+  async getByEscola(req: Request, res: Response) {
     try {
-      const pddeList = await prisma.pDDE.findMany({
-        where: {
-          deletedAt: null, // Listar apenas registros que não foram excluídos
-        },
-        include: {
-          ContaBancaria: true,
-          SaldoPDDE: true,
-          Escola: true,
-        },
-      });
+      const { idEscola } = req.params;
 
-      // Calcular os valores de custeio e capital como porcentagens do valor total
-      const pddeListComSaldo = pddeList.map((pdde) => {
-        const saldo = pdde.SaldoPDDE[0] || { valor: 0, custeio: 0, capital: 0 }; // Valores padrão
-        const valorTotal = Number(saldo.valor);
-        const custeioCalculado = ((valorTotal * Number(saldo.custeio)) / 100).toFixed(2);
-        const capitalCalculado = ((valorTotal * Number(saldo.capital)) / 100).toFixed(2);
-
-        return {
-          ...pdde,
-          valor: valorTotal || 0,
-          custeio: custeioCalculado || '0.00',
-          capital: capitalCalculado || '0.00',
-        };
-      });
-
-      res.status(200).json(pddeListComSaldo);
-    } catch (error) {
-      console.error('Erro ao listar PDDEs com saldo:', error);
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Erro ao listar os registros de PDDE com saldo' });
-    }
-  }
-
-  async listarPDDEComSaldoPorEscola(req: Request, res: Response) {
-    try {
-      const { escolaId } = req.params;
-
-      if (!escolaId) {
+      if (!idEscola) {
         return res.status(StatusCodes.BAD_REQUEST).json({ error: 'O ID da escola é obrigatório' });
       }
 
@@ -127,7 +94,7 @@ export class PddeController {
       const pddeList = await prisma.pDDE.findMany({
         where: {
           deletedAt: null, // Listar apenas registros que não foram excluídos
-          escolaId: Number(escolaId),
+          escolaId: Number(idEscola),
         },
         include: {
           ContaBancaria: true,
@@ -136,25 +103,7 @@ export class PddeController {
         },
       });
 
-      // Calcular os valores de custeio e capital como porcentagens do valor total
-      const pddeListComSaldo = pddeList.map((pdde) => {
-        const saldo = pdde.SaldoPDDE[0]; // Pega o primeiro saldo relacionado
-        if (saldo) {
-          const valorTotal = Number(saldo.valor);
-          const custeioCalculado = ((valorTotal * Number(saldo.custeio)) / 100).toFixed(2);
-          const capitalCalculado = ((valorTotal * Number(saldo.capital)) / 100).toFixed(2);
-
-          return {
-            ...pdde,
-            valor: valorTotal,
-            custeio: custeioCalculado,
-            capital: capitalCalculado,
-          };
-        }
-        return pdde;
-      });
-
-      return res.status(StatusCodes.OK).json(pddeListComSaldo);
+      return res.status(StatusCodes.OK).json(pddeList);
     } catch (error) {
       console.error('Erro ao listar PDDEs com saldo por escola:', error);
       return res

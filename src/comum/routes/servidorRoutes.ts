@@ -9,7 +9,8 @@ import {
   getServidoresByNivelAcessoId,
   getServidoresByNivelAcessoAndEscola,
   redefinirSenha,
-  getServidoresByNivelAcesso
+  getServidoresByNivelAcesso,
+  updateServidorNiveisAcesso
 } from '../controller/servidorController';
 
 const router = Router();
@@ -21,7 +22,7 @@ router.get('/servidores/:id', getServidorById);
 router.get('/servidores/escola/:escolaId', getServidoresByEscola);
 router.get('/servidores/nivelacesso/:nivelAcessoId', getServidoresByNivelAcessoId)
 router.get('/servidores/escola/:escolaId/:nivelAcessoId', getServidoresByNivelAcessoAndEscola)
-router.put('/servidores/:id', updateServidor);
+router.put('/servidores/:id', updateServidorNiveisAcesso);
 router.delete('/servidores/:id', deleteServidor);
 router.put('/servidores/:id/redefinir-senha', redefinirSenha);
 

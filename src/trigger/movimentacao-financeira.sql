@@ -30,7 +30,7 @@ BEGIN
             ELSE 0
         END,
         updated_at = NOW()
-    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE id = NEW.conta_bancaria_id);
+    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE conta_bancaria_id = NEW.conta_bancaria_id);
 END;$
 
 -- Trigger para UPDATE em movimentacao_financeira
@@ -80,7 +80,7 @@ BEGIN
             ELSE 0
         END,
         updated_at = NOW()
-    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE id = NEW.conta_bancaria_id);
+    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE conta_bancaria_id = NEW.conta_bancaria_id);
 END;$
 
 -- Trigger para DELETE em movimentacao_financeira
@@ -115,5 +115,5 @@ BEGIN
             ELSE 0
         END,
         updated_at = NOW()
-    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE id = OLD.conta_bancaria_id);
+    WHERE saldo_PDDE_id = (SELECT id FROM pdde WHERE conta_bancaria_id = OLD.conta_bancaria_id);
 END;$

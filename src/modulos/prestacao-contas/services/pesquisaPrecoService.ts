@@ -1,4 +1,4 @@
-import { PesquisaPreco } from '@prisma/client';
+import { Item, PesquisaPreco } from '@prisma/client';
 import { prisma } from '../../../../prisma/client';
 import { ErrorHandler } from '../../../handler/prismaErrorHandler';
 import { StatusCodes } from 'http-status-codes';
@@ -67,9 +67,13 @@ export class PesquisaPrecoService {
       if (!pesquisaExiste.ok) {
         return { ok: false, data: StatusCodes.NOT_FOUND };
       } else {
+        // "Deletar" a pesquisa de preço
         const deletePesquisa = await prisma.pesquisaPreco.update({
           where: {
             id: +id,
+            proponenteA: null,
+            proponenteB: null,
+            proponenteC: null,
           },
           data: {
             deletedAt: new Date(),
@@ -94,6 +98,18 @@ export class PesquisaPrecoService {
           DocumentoScanB: true,
           DocumentoScanC: true,
           Programa: true,
+          Item: {
+            where: {
+              deletedAt: null,
+            },
+            include: {
+              PropostaItem: {
+                where: {
+                  deletedAt: null,
+                },
+              },
+            },
+          },
           PrestacaoContas: {
             include: {
               PDDE: true,

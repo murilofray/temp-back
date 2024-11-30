@@ -7,9 +7,9 @@ const ataService = new AtaService();
 export class AtaController {
   async create(req: Request, res: Response) {
     try {
-      const { titulo, ata, data, documentosScanId, escolaId } = req.body;
+      const { titulo, ata, data, documentosScanId, escolaId, tipo } = req.body;
 
-      if (!documentosScanId || !titulo || !ata || !data || !escolaId) {
+      if ( !titulo || !ata || !data || !escolaId || !tipo) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           error: 'Todos os campos obrigatórios devem ser preenchidos.',
         });
@@ -21,6 +21,7 @@ export class AtaController {
         titulo,
         ata,
         data: new Date(data),
+        tipo,
       });
 
       return res.status(StatusCodes.CREATED).json(novaAta.data);
@@ -60,7 +61,7 @@ export class AtaController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { titulo, ata, data, documentosScanId } = req.body;
+      const { titulo, ata, data, documentosScanId, tipo } = req.body;
 
       if (!id) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -73,6 +74,7 @@ export class AtaController {
       if (ata) updatedData.ata = ata;
       if (data) updatedData.data = new Date(data);
       if (documentosScanId) updatedData.documentosScanId = parseInt(documentosScanId);
+      if(tipo) updatedData.tipo = tipo
 
       const resposta = await ataService.update(parseInt(id), updatedData);
 

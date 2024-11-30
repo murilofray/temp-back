@@ -64,4 +64,14 @@ export default class TurmaController {
       return res.status(StatusCodes.BAD_REQUEST).send({ resposta });
     }
   }
+
+  async rematricular(req: Request, res: Response) {
+    const { turmaAtual, turmaNova } = req.body;
+    const resposta = await turmaService.rematricular(+turmaAtual, +turmaNova)
+    if (resposta?.ok) {
+      return res.status(StatusCodes.OK).send(resposta.data);
+    } else {
+      return res.status(StatusCodes.BAD_REQUEST).send({ resposta });
+    }
+  }
 }
