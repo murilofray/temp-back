@@ -13,7 +13,6 @@ router.delete('/:id', authentication.authenticate, notaFiscalController.delete);
 
 // Busca
 router.get('/:id', authentication.authenticate, notaFiscalController.getById);
-router.get('/bem/:id', authentication.authenticate, notaFiscalController.findByBem);
 router.get('/pesquisa/:id', authentication.authenticate, notaFiscalController.findByPesquisa);
 
 export default router;
