@@ -1,4 +1,4 @@
-import { Prisma, NotaFiscal, Bem } from '@prisma/client';
+import { Prisma, NotaFiscal } from '@prisma/client';
 import { prisma } from '../../../../prisma/client';
 import { StatusCodes } from 'http-status-codes';
 
@@ -100,59 +100,11 @@ export class NotaFiscalService {
     }
   }
 
-  async findByBem(idBem: number) {
-    try {
-      const notasFiscais = await prisma.notaFiscal.findFirst({
-        where: {
-          Bem: {
-            some: {
-              id: idBem,
-              deletedAt: null,
-            },
-          },
-          deletedAt: null,
-        },
-        include: {
-          Fornecedor: true,
-          DocumentosScan: true,
-        },
-      });
-      return { ok: true, data: notasFiscais };
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
-  async findByServico(idServico: number) {
-    try {
-      const notasFiscais = await prisma.notaFiscal.findFirst({
-        where: {
-          Servico: {
-            some: {
-              id: idServico,
-              deletedAt: null,
-            },
-          },
-          deletedAt: null,
-        },
-        include: {
-          Fornecedor: true,
-          DocumentosScan: true,
-        },
-      });
-      return { ok: true, data: notasFiscais };
-    } catch (error) {
-      return ErrorHandler.handleError(error);
-    }
-  }
-
   async findByPesquisa(idPesquisa: number) {
     try {
       const notasFiscais = await prisma.notaFiscal.findMany({
         where: {
-          OR: [
-            {
-              Bem: {
+              Item:{
                 some: {
                   PesquisaPreco: {
                     id: idPesquisa,
@@ -160,16 +112,6 @@ export class NotaFiscalService {
                   },
                 },
               },
-              Servico: {
-                some: {
-                  PesquisaPreco: {
-                    id: idPesquisa,
-                    deletedAt: null,
-                  },
-                },
-              },
-            },
-          ],
           deletedAt: null,
         },
         include: {
@@ -182,7 +124,7 @@ export class NotaFiscalService {
       return ErrorHandler.handleError(error);
     }
   }
-
+  
   async findByFornecedor(idFornecedor: number) {
     try {
       const notasFiscais = await prisma.notaFiscal.findMany({

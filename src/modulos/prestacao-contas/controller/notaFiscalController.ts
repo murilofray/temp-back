@@ -50,15 +50,6 @@ export class NotaFiscalController {
     }
   }
 
-  async findByServico(req: Request, res: Response) {
-    const resposta = await notaFiscalService.findByServico(Number(req.params.idServico));
-    if (resposta?.ok) {
-      return res.status(StatusCodes.OK).send(resposta.data);
-    } else {
-      return res.status(StatusCodes.NOT_FOUND).send({ resposta });
-    }
-  }
-
   async findByPesquisa(req: Request, res: Response) {
     const resposta = await notaFiscalService.findByPesquisa(Number(req.params.idPesquisa));
     if (resposta?.ok) {
